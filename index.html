@@ -3,13 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Athlete Tracker - Mor Boy</title>
+  <title>Athlete Tracker - Mor Boy Edition</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .hr-value { font-size: 6rem; line-height: 1; }
     .pulse { animation: pulse-red 1s infinite; }
     @keyframes pulse-red { 0% { transform: scale(0.95); } 70% { transform: scale(1.05); } 100% { transform: scale(0.95); } }
+    /* ปรับแต่ง Scrollbar ให้ดูเท่เข้ากับธีม */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
   </style>
 </head>
 <body class="bg-black text-white p-4 font-sans min-h-screen">
@@ -18,9 +22,9 @@
     <header class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
       <div>
         <h1 class="text-xl font-bold text-blue-500">Athlete Tracker</h1>
-        <p class="text-[10px] text-gray-500 uppercase tracking-widest">GitHub Pro Edition</p>
+        <p class="text-[10px] text-gray-500 uppercase tracking-widest">Runner X Therapist Pro</p>
       </div>
-      <div id="connectionStatus" class="text-[10px] bg-gray-800 px-3 py-1 rounded-full text-gray-400">READY</div>
+      <div id="connectionStatus" class="text-[10px] bg-gray-800 px-3 py-1 rounded-full text-gray-400 font-bold">READY</div>
     </header>
 
     <div class="bg-gray-900 rounded-3xl p-6 shadow-2xl mb-6 border border-gray-800 relative overflow-hidden">
@@ -31,7 +35,7 @@
 
       <div class="grid grid-cols-2 gap-4 mt-8 bg-black bg-opacity-40 p-4 rounded-2xl border border-gray-800">
         <div class="text-center border-r border-gray-800">
-          <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Distance (Est.)</p>
+          <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Est. Distance</p>
           <p class="text-2xl font-black text-blue-400"><span id="distDisplay">0.0</span> <span class="text-xs">m</span></p>
         </div>
         <div class="text-center">
@@ -41,7 +45,7 @@
       </div>
       
       <button onclick="connectBluetooth()" id="scanBtn" class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition transform active:scale-95 shadow-lg uppercase tracking-wider">
-        Scan Bluetooth
+        Scan All Devices
       </button>
     </div>
 
@@ -60,7 +64,7 @@
     
     let bluetoothDevice;
     let hrChart;
-    const MEASURED_POWER = -60; 
+    const MEASURED_POWER = -60; // ค่า RSSI อ้างอิงที่ระยะ 1 เมตร
 
     // Initialize Chart
     const ctx = document.getElementById('hrChart').getContext('2d');
@@ -87,41 +91,54 @@
     });
 
     async function connectBluetooth() {
+      const status = document.getElementById('connectionStatus');
       try {
-        const status = document.getElementById('connectionStatus');
         status.innerText = "SCANNING...";
         
+        // แก้ไข: ใช้ acceptAllDevices เพื่อให้มองเห็นอุปกรณ์ทั้งหมด
         bluetoothDevice = await navigator.bluetooth.requestDevice({
-          filters: [{ services: ['heart_rate'] }]
+          acceptAllDevices: true,
+          optionalServices: ['heart_rate'] // ระบุว่าเราอาจจะใช้งาน heart rate service
         });
 
         status.innerText = "CONNECTING...";
         const server = await bluetoothDevice.gatt.connect();
-        const service = await server.getPrimaryService('heart_rate');
-        const characteristic = await service.getCharacteristic('heart_rate_measurement');
-        
-        await characteristic.startNotifications();
-        characteristic.addEventListener('characteristicvaluechanged', handleHRUpdate);
 
-        status.innerText = "LIVE";
-        status.classList.add('text-green-500');
-        document.getElementById('scanBtn').classList.add('hidden');
-        document.getElementById('hrDisplay').classList.add('pulse');
-        document.getElementById('deviceName').innerText = bluetoothDevice.name;
+        // แสดงชื่ออุปกรณ์ที่เลือก
+        document.getElementById('deviceName').innerText = bluetoothDevice.name || "Unnamed Device";
         document.getElementById('deviceInfo').classList.remove('hidden');
+        document.getElementById('scanBtn').classList.add('hidden');
 
-        // Start Signal Tracking
+        // พยายามเชื่อมต่อกับ Heart Rate Service
+        try {
+          const service = await server.getPrimaryService('heart_rate');
+          const characteristic = await service.getCharacteristic('heart_rate_measurement');
+          
+          await characteristic.startNotifications();
+          characteristic.addEventListener('characteristicvaluechanged', handleHRUpdate);
+          
+          status.innerText = "LIVE (HR)";
+          status.classList.add('text-green-500');
+          document.getElementById('hrDisplay').classList.add('pulse');
+        } catch (serviceError) {
+          console.warn("Heart Rate Service not found, monitoring Signal Only");
+          status.innerText = "LIVE (SIGNAL ONLY)";
+          status.classList.add('text-yellow-500');
+        }
+
+        // เริ่มติดตามสัญญาณ RSSI
         monitorSignal();
 
       } catch (error) {
         console.error(error);
-        document.getElementById('connectionStatus').innerText = "FAILED";
-        alert("Bluetooth Connection Failed: " + error);
+        status.innerText = "FAILED";
+        alert("Bluetooth Error: " + error);
       }
     }
 
     function handleHRUpdate(event) {
       const value = event.target.value;
+      // การอ่านค่า Heart Rate ตามมาตรฐาน BLE (UInt8 ที่ index 1)
       const hr = value.getUint8(1);
       
       document.getElementById('hrDisplay').innerText = hr;
@@ -136,19 +153,19 @@
       }
       hrChart.update('none');
 
-      // Send Data to Google Sheets
+      // ส่งข้อมูลไป Google Sheets
       sendToSheets(hr);
     }
 
     function sendToSheets(hrValue) {
       const payload = {
-        name: bluetoothDevice ? bluetoothDevice.name : "Unknown Athlete",
+        name: bluetoothDevice ? bluetoothDevice.name : "Unknown Device",
         hr: hrValue,
         distance: document.getElementById('distDisplay').innerText,
-        rssi: document.getElementById('rssiVal') ? document.getElementById('rssiVal').innerText : "-60"
+        rssi: document.getElementById('rssiDisplay').innerText
       };
 
-      // ใช้ fetch แบบ no-cors เพื่อส่งข้อมูลข้ามโดเมนไปหา Google Apps Script
+      // ส่งแบบ no-cors เพื่อป้องกันปัญหา CORS กับ Google Apps Script
       fetch(WEB_APP_URL, {
         method: "POST",
         mode: "no-cors",
@@ -160,14 +177,18 @@
 
     function monitorSignal() {
       if (bluetoothDevice && bluetoothDevice.gatt.connected) {
-        // จำลองการสวิงของค่า RSSI เพื่อคำนวณระยะทางแบบเรียลไทม์
-        const rssi = -55 - Math.floor(Math.random() * 15);
+        // ใน Web Bluetooth API จริงๆ การอ่าน RSSI แบบ Real-time ตลอดเวลาทำได้ยาก
+        // ส่วนนี้เป็นการจำลอง Logic การสวิงของระยะทางเพื่อให้ UI ดูมีการเคลื่อนไหว
+        const rssi = -55 - Math.floor(Math.random() * 15); 
         const distance = Math.pow(10, (MEASURED_POWER - rssi) / (10 * 2));
         
         document.getElementById('rssiDisplay').innerText = rssi;
         document.getElementById('distDisplay').innerText = distance.toFixed(1);
         
         setTimeout(monitorSignal, 3000);
+      } else {
+        document.getElementById('connectionStatus').innerText = "DISCONNECTED";
+        document.getElementById('connectionStatus').classList.remove('text-green-500');
       }
     }
   </script>
