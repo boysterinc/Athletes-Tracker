@@ -8,8 +8,8 @@
   <style>
     body { background-color: #000; color: #fff; font-family: sans-serif; }
     .radar-pulse { animation: radar-wave 2s infinite ease-out; }
-    @keyframes radar-wave { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); } 100% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } }
-    .device-item { border-left: 4px solid #ef4444; background: rgba(17, 24, 39, 0.9); transition: all 0.4s ease; }
+    @keyframes radar-wave { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 100% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } }
+    .device-item { border-left: 4px solid #ef4444; background: #111827; transition: all 0.3s ease; }
   </style>
 </head>
 <body class="p-4 min-h-screen">
@@ -18,14 +18,14 @@
     <header class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
       <div>
         <h1 class="text-xl font-bold text-red-500 italic">TEAM TRACKER</h1>
-        <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Filtered Passive Scan</p>
+        <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Passive Radar v2</p>
       </div>
       <div id="scanStatus" class="text-[10px] bg-red-900 px-3 py-1 rounded-full text-white font-bold uppercase">OFF</div>
     </header>
 
     <div class="mb-4 bg-gray-900 p-4 rounded-2xl border border-gray-800 space-y-3">
       <div>
-        <label class="text-[10px] text-gray-500 uppercase font-bold mb-1 block">โหมดสถานที่</label>
+        <label class="text-[10px] text-gray-500 uppercase font-bold mb-1 block italic">Environment (สถานที่)</label>
         <select id="envMode" class="w-full bg-transparent text-red-400 outline-none font-bold">
           <option value="2.0">สนามกลางแจ้ง (Open Field)</option>
           <option value="2.7">สนามกีฬาคนเยอะ (Crowded Stadium)</option>
@@ -33,24 +33,22 @@
         </select>
       </div>
       <div class="border-t border-gray-800 pt-3">
-        <label class="text-[10px] text-gray-500 uppercase font-bold mb-1 block">White List (ชื่อ หรือ ID บางส่วน)</label>
-        <input type="text" id="filterInput" placeholder="Garmin, Forerunner, toshiba, 1Q==" class="w-full bg-transparent text-gray-300 outline-none placeholder:text-gray-700 font-mono text-xs">
-        <p class="text-[9px] text-gray-600 mt-1">*เว้นวรรคเพื่อใส่หลายชื่อ (ถ้าว่างไว้จะเจอทุกอย่าง)</p>
+        <label class="text-[10px] text-gray-500 uppercase font-bold mb-1 block italic">White List (ชื่อนักกีฬา)</label>
+        <input type="text" id="filterInput" placeholder="ใส่ชื่อหรือรุ่นนาฬิกา เช่น Watch7" class="w-full bg-transparent text-gray-300 outline-none font-mono text-sm">
       </div>
     </div>
 
-    <button onclick="startTeamRadar()" id="radarBtn" class="w-full mb-6 bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl shadow-lg uppercase tracking-wider active:scale-95 transition">
+    <button id="radarBtn" class="w-full mb-6 bg-red-600 hover:bg-red-500 text-white font-black py-4 rounded-2xl shadow-lg uppercase tracking-wider active:scale-95 transition">
       Start Team Radar
     </button>
 
     <div class="space-y-2">
       <div class="flex justify-between items-center px-2 mb-2">
-        <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Active Team (Top 10)</h2>
-        <span class="text-[10px] text-gray-600" id="deviceCount">Synced: 0</span>
+        <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest italic">Live Ranking (Top 10)</h2>
+        <span class="text-[10px] text-gray-600" id="deviceCount">Devices: 0</span>
       </div>
-      
-      <div id="deviceList" class="space-y-2">
-        <p id="placeholder" class="text-center py-10 text-gray-700 text-sm italic">Waiting for synced signals...</p>
+      <div id="deviceList" class="space-y-2 text-center py-10 text-gray-700 text-sm italic">
+        Waiting for signals...
       </div>
     </div>
   </div>
@@ -60,94 +58,94 @@
     const TX_POWER = -59; 
     let teamMap = new Map();
 
-    async function startTeamRadar() {
+    // บังคับผูกฟังก์ชันกับปุ่มโดยตรง (ป้องกันโค้ดนิ่ง)
+    document.getElementById('radarBtn').addEventListener('click', async function() {
       const statusLabel = document.getElementById('scanStatus');
-      const radarBtn = document.getElementById('radarBtn');
+      const radarBtn = this;
 
       if (!navigator.bluetooth || !navigator.bluetooth.requestLEScan) {
-        alert("Chrome Android ของคุณไม่รองรับโหมดนี้");
+        alert("Chrome ของคุณยังไม่รองรับโหมดนี้ หรือยังไม่ได้เปิด Flag");
         return;
       }
 
       try {
+        // เปลี่ยนสถานะทันทีเมื่อกด
         statusLabel.innerText = "WAITING...";
         statusLabel.className = "text-[10px] bg-yellow-600 px-3 py-1 rounded-full text-white font-bold";
 
-        const scan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true, keepRepeatedDevices: true });
+        // เรียกสแกน (ต้องมี Pop-up เด้งมาให้เลือกอุปกรณ์)
+        const scan = await navigator.bluetooth.requestLEScan({
+          acceptAllAdvertisements: true,
+          keepRepeatedDevices: true
+        });
 
-        statusLabel.innerText = "FILTERING ON";
-        statusLabel.className = "text-[10px] bg-red-600 px-3 py-1 rounded-full text-white font-bold uppercase";
-        radarBtn.innerText = "RADAR ACTIVE (Filtered)";
+        // เมื่อรันผ่าน
+        statusLabel.innerText = "RADAR ON";
+        statusLabel.className = "text-[10px] bg-green-600 px-3 py-1 rounded-full text-white font-bold uppercase";
+        radarBtn.innerText = "RADAR ACTIVE";
         radarBtn.classList.add('radar-pulse');
         radarBtn.disabled = true;
 
+        // รับสัญญาณ
         navigator.bluetooth.addEventListener('advertisementreceived', event => {
           const rawId = event.device.id;
-          const rawName = event.device.name || "Runner (" + rawId.slice(-4) + ")";
+          const rawName = event.device.name || "Device (" + rawId.slice(-4) + ")";
           const rssi = event.rssi;
           const envN = parseFloat(document.getElementById('envMode').value);
           
-          // ดึงค่า White List จาก Input
-          const filterStr = document.getElementById('filterInput').value.trim();
-          const filters = filterStr ? filterStr.split(/\s+/).map(f => f.toLowerCase()) : [];
-
-          // --- ส่วนดักกรอง (Filtering Logic) ---
-          let isAllowed = false;
+          const filterStr = document.getElementById('filterInput').value.trim().toLowerCase();
           
-          // ถ้าไม่มี White List ให้เจอทั้งหมดเหมือนเดิม
-          if (filters.length === 0) {
-            isAllowed = true;
-          } else {
-            // เช็คว่าชื่ออุปกรณ์ หรือ ID มีคำที่ตรงกับ White List ไหม
-            isAllowed = filters.some(f => 
-              rawName.toLowerCase().includes(f) || 
-              rawId.toLowerCase().includes(f)
-            );
+          // กรองข้อมูล
+          if (filterStr && !rawName.toLowerCase().includes(filterStr) && !rawId.toLowerCase().includes(filterStr)) {
+            return;
           }
-          // ------------------------------------
 
-          if (!isAllowed) return; // ถ้าไม่ตรง ให้ข้ามไป
-
-          // คำนวณระยะทาง
           const distance = Math.pow(10, (TX_POWER - rssi) / (10 * envN));
-
-          // อัปเดตข้อมูลใน Map
           teamMap.set(rawId, { name: rawName, rssi, distance, lastSeen: Date.now() });
-          updateTeamList();
           
-          // ส่งข้อมูลไป Sheets เมื่ออยู่ใกล้มาก (< 2.5m) และไม่ส่งถี่เกินไป
-          if (distance < 2.5 && (!teamMap.get(rawId).lastSent || Date.now() - teamMap.get(rawId).lastSent > 15000)) {
-            sendToSheets(rawName, rssi, distance.toFixed(1));
-            teamMap.get(rawId).lastSent = Date.now();
-          }
+          renderList();
         });
 
       } catch (error) {
-        statusLabel.innerText = "OFF";
+        console.error(error);
+        statusLabel.innerText = "ERROR";
         statusLabel.className = "text-[10px] bg-red-900 px-3 py-1 rounded-full text-white font-bold";
-        alert("Radar Error: " + error.message);
+        alert("กด 'ยกเลิก' หรือ 'อนุญาต' เพื่อเริ่มระบบ: " + error.message);
       }
-    }
+    });
 
-    function updateTeamList() {
+    function renderList() {
       const listContainer = document.getElementById('deviceList');
-      const placeholder = document.getElementById('placeholder');
       const now = Date.now();
 
-      // ลบคนที่หายไปเกิน 12 วินาที
+      // ลบคนที่หายไปเกิน 10 วินาที
       for (let [id, data] of teamMap) {
-        if (now - data.lastSeen > 12000) teamMap.delete(id);
+        if (now - data.lastSeen > 10000) teamMap.delete(id);
       }
 
-      // เรียงตามระยะทาง (ใกล้สุดอยู่บน)
-      const sortedTeam = Array.from(teamMap.values())
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, 10);
+      const sorted = Array.from(teamMap.values()).sort((a, b) => a.distance - b.distance).slice(0, 10);
+      document.getElementById('deviceCount').innerText = `Devices: ${teamMap.size}`;
 
-      if (sortedTeam.length > 0) placeholder.style.display = 'none';
-      document.getElementById('deviceCount').innerText = `Synced: ${teamMap.size}`;
+      if (sorted.length === 0) {
+        listContainer.innerHTML = "Waiting for signals...";
+        return;
+      }
 
-      listContainer.innerHTML = sortedTeam.map((runner, index) => `
-        <div class="device-item bg-gray-900 p-3 rounded-xl flex justify-between items-center shadow-lg">
-          <div class="flex items-center space-x-3">
-            <span class="text-xs font-bold text-gray-700 w-4">#${index + 1}
+      listContainer.innerHTML = sorted.map((runner, index) => `
+        <div class="device-item p-4 rounded-xl flex justify-between items-center shadow-lg mb-2">
+          <div class="flex items-center space-x-3 text-left">
+            <span class="text-xs font-bold text-gray-600">#${index + 1}</span>
+            <div>
+              <p class="text-sm font-black text-white truncate w-32">${runner.name}</p>
+              <p class="text-[9px] text-gray-500 font-mono italic">${runner.rssi} dBm</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-xl font-black text-red-500">${runner.distance.toFixed(1)}<span class="text-[10px] ml-1 text-gray-500">m</span></p>
+          </div>
+        </div>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
