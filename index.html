@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Athlete Radar v5.4 - Pro Monitor</title>
+  <title>Athlete Radar v5.5 - Calibration Mode</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body { background-color: #000; color: #fff; font-family: sans-serif; overflow-x: hidden; }
@@ -22,235 +22,208 @@
   <div class="max-w-md mx-auto">
     <header class="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
       <div>
-        <h1 class="text-lg font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v5.4</h1>
-        <p class="text-[9px] text-gray-500 font-bold uppercase italic">Pro Monitor Mode</p>
+        <h1 class="text-lg font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v5.5</h1>
+        <p class="text-[9px] text-yellow-500 font-bold uppercase italic">Auto-Calibration (30cm Standard)</p>
       </div>
       <div id="statusTag" class="bg-red-900 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase">OFF</div>
     </header>
 
-    <div class="mb-4 bg-gray-900 p-3 rounded-xl border border-gray-800 shadow-inner">
+    <div class="mb-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
       <div class="flex justify-between items-center mb-2">
-        <label class="text-[9px] text-red-500 uppercase font-black italic tracking-widest">My Team Members</label>
-        <button onclick="clearTeam()" class="text-[9px] text-gray-600 underline font-bold uppercase">Clear</button>
+        <label class="text-[9px] text-red-500 font-black italic">REGISTERED ATHLETES</label>
+        <button onclick="clearTeam()" class="text-[9px] text-gray-600 underline">Clear</button>
       </div>
       <div id="teamBadges" class="flex flex-wrap gap-2"></div>
     </div>
 
-    <div class="grid grid-cols-3 gap-2 mb-3">
+    <div class="grid grid-cols-3 gap-2 mb-3 text-center">
       <div class="bg-gray-800 p-2 rounded-lg border border-gray-700">
-        <label class="text-[8px] text-gray-400 block font-bold uppercase mb-1">Environment</label>
-        <select id="envMode" class="w-full bg-transparent text-xs text-blue-400 font-black outline-none">
-          <option value="2.0">Open Field</option>
+        <label class="text-[8px] text-gray-400 block font-bold mb-1">ENV</label>
+        <select id="envMode" class="w-full bg-transparent text-xs text-blue-400 font-bold outline-none">
+          <option value="2.0">Open</option>
           <option value="2.7">Stadium</option>
           <option value="3.5">Indoor</option>
         </select>
       </div>
       <div class="bg-gray-800 p-2 rounded-lg border border-gray-700">
-        <label class="text-[8px] text-gray-400 block font-bold uppercase mb-1">Display</label>
-        <select id="displayLimit" class="w-full bg-transparent text-xs text-green-400 font-black outline-none" onchange="savePrefs()">
+        <label class="text-[8px] text-gray-400 block font-bold mb-1">SHOW</label>
+        <select id="displayLimit" class="w-full bg-transparent text-xs text-green-400 font-bold outline-none" onchange="render()">
           <option value="10">Top 10</option>
           <option value="20">Top 20</option>
           <option value="30">Top 30</option>
         </select>
       </div>
       <div class="bg-gray-800 p-2 rounded-lg border border-gray-700">
-        <label class="text-[8px] text-gray-400 block font-bold uppercase mb-1">Search</label>
-        <input type="text" id="quickSearch" placeholder="..." class="w-full bg-transparent text-xs text-white outline-none">
+        <label class="text-[8px] text-gray-400 block font-bold mb-1">SEARCH</label>
+        <input id="quickSearch" type="text" placeholder="..." class="w-full bg-transparent text-xs text-white outline-none">
       </div>
     </div>
 
-    <button id="startBtn" class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase text-sm mb-2 shadow-2xl active:scale-95 transition border-b-4 border-blue-800">Start Radar</button>
-    <button id="stopBtn" class="w-full bg-gray-800 py-2 rounded-xl font-bold uppercase text-[10px] mb-4 border border-gray-700 opacity-60">Stop & Refresh</button>
+    <button id="startBtn" class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase text-sm mb-2 shadow-lg active:scale-95 transition">Start Radar</button>
+    <button id="stopBtn" class="w-full bg-gray-800 py-2 rounded-xl font-bold uppercase text-[10px] mb-4 opacity-50">Stop & Refresh</button>
 
     <div id="listArea">
-      <div class="flex justify-between text-[10px] text-gray-500 mb-2 uppercase font-black px-1 italic">
-        <span id="displayLabel">Nearby List</span>
+      <div class="flex justify-between text-[10px] text-gray-500 mb-2 font-black italic">
+        <span>Nearby (Tap to Calibrate at 30cm)</span>
         <span id="deviceCount" class="text-blue-500">Waiting...</span>
       </div>
       <div id="deviceList" class="space-y-1.5">
-        <p class="text-center text-gray-800 py-10 italic font-bold">Press START to Scan Nearby Athletes</p>
+        <p class="text-center text-gray-800 py-10 font-bold italic underline">Hold Watch < 30cm & Press START</p>
       </div>
     </div>
   </div>
 
   <div id="mapModal" class="modal" onclick="closeModal()">
     <div class="modal-content" onclick="event.stopPropagation()">
-      <h2 class="text-blue-500 font-black text-lg mb-1 uppercase italic border-b border-gray-800 pb-2">Athlete Mapping</h2>
-      <p id="targetIDDisp" class="text-[9px] text-gray-400 mt-2 font-mono break-all"></p>
-      <div class="my-4">
-        <p class="text-[10px] text-red-500 font-black uppercase mb-2">Sync to Existing Member:</p>
-        <div id="athleteOptions" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
-      </div>
+      <h2 class="text-blue-500 font-black text-lg mb-1 uppercase italic">Athlete Calibration</h2>
+      <p class="text-[10px] text-yellow-500 mb-4 font-bold">บันทึกค่าความแรงสัญญาณที่ระยะ 30 ซม.</p>
+      <div id="athleteOptions" class="space-y-2 mb-4"></div>
       <div class="border-t border-gray-700 pt-4">
-        <button onclick="promptNewAthlete()" class="w-full bg-blue-600 py-3 rounded-xl font-bold uppercase text-xs mb-2">Register as New</button>
+        <button onclick="promptNewAthlete()" class="w-full bg-blue-600 py-3 rounded-xl font-bold uppercase text-xs mb-2">+ New Registration</button>
         <button onclick="closeModal()" class="w-full bg-gray-700 py-3 rounded-xl font-bold uppercase text-xs">Cancel</button>
       </div>
     </div>
   </div>
 
-  <div id="detailModal" class="modal" onclick="closeModal()">
-    <div class="modal-content text-center" onclick="event.stopPropagation()">
-      <h2 class="text-red-500 font-black text-lg mb-4 uppercase italic border-b border-gray-700 pb-2">Athlete Card</h2>
-      <div class="bg-black/50 p-4 rounded-xl mb-6 text-left">
-        <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">Name</p>
-        <p id="modalName" class="text-white font-bold text-lg break-all mb-4 uppercase tracking-wider">Device Name</p>
-        <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">Assigned IDs</p>
-        <div id="modalID" class="text-blue-400 font-mono text-[10px] break-all leading-tight max-h-32 overflow-y-auto"></div>
-      </div>
-      <div class="flex gap-2">
-          <button onclick="closeModal()" class="flex-1 bg-gray-700 py-3 rounded-lg font-bold uppercase text-xs">Close</button>
-          <button id="modalDeleteBtn" class="flex-none bg-red-900 px-4 py-3 rounded-lg font-bold uppercase text-xs">Delete</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    const TX_POWER = -59;
+    const DEFAULT_TX = -59; // ค่ามาตรฐานถ้ายังไม่ได้ Calibrate
     let devices = new Map();
-    let teamList = [];
+    let teamList = []; // [{id, name, tx}]
     let bluetoothScan = null;
     let currentMappingID = null;
-
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const statusTag = document.getElementById('statusTag');
-    const deviceList = document.getElementById('deviceList');
-    const teamBadges = document.getElementById('teamBadges');
-    const displayLimit = document.getElementById('displayLimit');
+    let currentMappingRSSI = null;
 
     window.onload = () => {
-      // โหลดรายชื่อทีม
-      const savedTeam = localStorage.getItem('morboy_team_stable');
-      if (savedTeam) { try { teamList = JSON.parse(savedTeam); renderTeamBadges(); } catch(e) { teamList = []; } }
-      
-      // โหลดค่าการแสดงผลที่เลือกไว้ล่าสุด
-      const savedLimit = localStorage.getItem('morboy_display_limit');
-      if (savedLimit) { displayLimit.value = savedLimit; }
+      const saved = localStorage.getItem('morboy_team_v5_5');
+      if (saved) { try { teamList = JSON.parse(saved); renderTeamBadges(); } catch(e) { teamList = []; } }
     };
 
-    function savePrefs() {
-      localStorage.setItem('morboy_display_limit', displayLimit.value);
-      render();
-    }
-
     function renderTeamBadges() {
-      if (teamList.length === 0) { teamBadges.innerHTML = '<span class="text-[9px] text-gray-700 italic font-bold">Whitelist is empty.</span>'; return; }
+      if (teamList.length === 0) { document.getElementById('teamBadges').innerHTML = '<span class="text-[9px] text-gray-700 italic">No athletes.</span>'; return; }
       const uniqueNames = [...new Set(teamList.map(m => m.name))];
-      teamBadges.innerHTML = uniqueNames.map((name) => `
-        <div onclick="showDetailByName('${name}')" class="team-badge">
-          ${name}
-        </div>
+      document.getElementById('teamBadges').innerHTML = uniqueNames.map(name => `
+        <div onclick="showDetailByName('${name}')" class="team-badge">${name}</div>
       `).join('');
     }
 
-    async function startRadar() {
-      try {
-        statusTag.innerText = "WAITING...";
-        statusTag.className = "bg-yellow-600 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase";
-
-        // ตรวจสอบความพร้อม Hardware
-        const available = await navigator.bluetooth.getAvailability();
-        if (!available) throw new Error("Bluetooth/GPS is OFF");
-
-        bluetoothScan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true, keepRepeatedDevices: true });
-        
-        statusTag.innerText = "RADAR ON";
-        statusTag.className = "bg-green-600 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase";
-        startBtn.innerText = "SCANNING ACTIVE";
-        startBtn.disabled = true;
-        startBtn.className = "w-full bg-blue-900 py-4 rounded-xl font-black uppercase text-sm mb-2 opacity-50";
-
-        navigator.bluetooth.addEventListener('advertisementreceived', handleSignal);
-      } catch (e) {
-        statusTag.innerText = "OFF";
-        statusTag.className = "bg-red-900 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase";
-        alert("⚠️ Error: " + e.message + "\n(Check Bluetooth/GPS/Permissions)");
-      }
+    // สูตรคำนวณ TX Power อ้างอิง (P0) จากระยะ 30cm (0.3m)
+    // Formula: RSSI = P0 - 10n * log10(d)  => P0 = RSSI + 10n * log10(0.3)
+    function calculateP0(rssi) {
+      const n = parseFloat(document.getElementById('envMode').value);
+      const log03 = -0.5228; 
+      return rssi - (10 * n * log03);
     }
 
-    startBtn.addEventListener('click', startRadar);
-
-    function handleSignal(event) {
-      const id = event.device.id;
-      const name = event.device.name || "Unknown Device";
-      const rssi = event.rssi;
-      const env = parseFloat(document.getElementById('envMode').value);
-      const search = document.getElementById('quickSearch').value.toLowerCase();
-      const dist = Math.pow(10, (TX_POWER - rssi) / (10 * env));
-      const isTeam = teamList.some(m => m.id === id || (name !== "Unknown Device" && m.name === name));
-      if (search && !name.toLowerCase().includes(search) && !id.toLowerCase().includes(search)) return;
-      devices.set(id, { id, name, rssi, dist, isTeam, time: Date.now() });
-      render();
-    }
-
-    function render() {
-      const now = Date.now();
-      const limit = parseInt(displayLimit.value);
-      for (let [id, data] of devices) { if (now - data.time > 8000) devices.delete(id); }
-      
-      const all = Array.from(devices.values());
-      const teamItems = all.filter(d => d.isTeam).sort((a, b) => a.dist - b.dist);
-      const generalItems = all.filter(d => !d.isTeam).sort((a, b) => a.dist - b.dist);
-      
-      const displayItems = [...teamItems, ...generalItems].slice(0, limit);
-      
-      // ปรับปรุงการแสดงตัวเลขให้ไม่งง
-      document.getElementById('deviceCount').innerText = `SHOWING ${displayItems.length} / TOTAL ${all.length}`;
-
-      deviceList.innerHTML = displayItems.map((d) => `
-        <div onclick="handleCardClick('${d.id}', '${d.name}')" class="item-card ${d.isTeam ? 'whitelist-card' : ''} flex justify-between items-center">
-          <div class="flex-1 overflow-hidden pr-2 text-left">
-            <div class="flex items-center space-x-2">
-              ${d.isTeam ? '<span class="bg-red-600 text-[8px] px-1 rounded font-black uppercase italic">Athlete</span>' : ''}
-              <span class="device-name">${d.name}</span>
-            </div>
-            <div class="id-text-full">${d.id}</div>
-            <div class="text-[9px] text-gray-500 mt-1 uppercase font-mono italic">RSSI: ${d.rssi} dBm</div>
-          </div>
-          <div class="text-right flex-none">
-            <div class="text-2xl font-black ${d.isTeam ? 'text-red-500' : 'text-blue-500'}">${d.dist.toFixed(1)}<span class="text-[10px] ml-0.5 text-gray-500 font-normal italic">m</span></div>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function handleCardClick(id, name) {
-      const existingMember = teamList.find(m => m.id === id);
-      if (existingMember) { showDetailByName(existingMember.name); } 
+    function handleCardClick(id, name, rssi) {
+      currentMappingID = id;
+      currentMappingRSSI = rssi;
+      const existing = teamList.find(m => m.id === id);
+      if (existing) { showDetailByName(existing.name); } 
       else {
-        currentMappingID = id;
-        document.getElementById('targetIDDisp').innerText = "Target ID: " + id;
         renderMappingOptions();
         document.getElementById('mapModal').style.display = 'flex';
       }
     }
 
     function renderMappingOptions() {
-      const optContainer = document.getElementById('athleteOptions');
-      const uniqueNames = [...new Set(teamList.map(m => m.name))];
-      if (uniqueNames.length === 0) { optContainer.innerHTML = '<p class="text-[10px] text-gray-600 italic">No members in whitelist.</p>'; return; }
-      optContainer.innerHTML = uniqueNames.map(name => `
+      const container = document.getElementById('athleteOptions');
+      const names = [...new Set(teamList.map(m => m.name))];
+      if (names.length === 0) { container.innerHTML = '<p class="text-[10px] text-gray-600 italic">No existing members.</p>'; return; }
+      container.innerHTML = names.map(name => `
         <button onclick="linkToAthlete('${name}')" class="select-btn">
           <span class="text-white font-bold text-xs uppercase italic">${name}</span>
         </button>
       `).join('');
     }
 
-    function linkToAthlete(name) { teamList.push({ id: currentMappingID, name: name }); saveAndRefresh(); closeModal(); }
-    function promptNewAthlete() { const name = prompt("Enter Athlete Name:"); if (name) { teamList.push({ id: currentMappingID, name: name }); saveAndRefresh(); closeModal(); } }
-    function showDetailByName(name) {
-      const members = teamList.filter(m => m.name === name);
-      document.getElementById('modalName').innerText = name;
-      document.getElementById('modalID').innerText = members.map(m => m.id).join('\n');
-      const delBtn = document.getElementById('modalDeleteBtn');
-      delBtn.onclick = () => { if(confirm(`Remove all data for ${name}?`)) { teamList = teamList.filter(m => m.name !== name); saveAndRefresh(); closeModal(); } };
-      document.getElementById('detailModal').style.display = 'flex';
+    function linkToAthlete(name) {
+      const tx = calculateP0(currentMappingRSSI);
+      teamList.push({ id: currentMappingID, name, tx });
+      saveAndRefresh();
+      closeModal();
     }
 
-    function closeModal() { document.getElementById('mapModal').style.display = 'none'; document.getElementById('detailModal').style.display = 'none'; }
-    function clearTeam() { if(confirm('Clear all data?')) { teamList = []; saveAndRefresh(); } }
-    function saveAndRefresh() { localStorage.setItem('morboy_team_stable', JSON.stringify(teamList)); renderTeamBadges(); render(); }
-    stopBtn.onclick = () => location.reload();
+    function promptNewAthlete() {
+      const name = prompt("Enter Athlete Name:");
+      if (name) {
+        const tx = calculateP0(currentMappingRSSI);
+        teamList.push({ id: currentMappingID, name, tx });
+        saveAndRefresh();
+        closeModal();
+      }
+    }
+
+    function saveAndRefresh() {
+      localStorage.setItem('morboy_team_v5_5', JSON.stringify(teamList));
+      renderTeamBadges();
+      render();
+    }
+
+    async function startRadar() {
+      try {
+        bluetoothScan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true, keepRepeatedDevices: true });
+        document.getElementById('statusTag').innerText = "ON";
+        document.getElementById('statusTag').className = "bg-green-600 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase";
+        document.getElementById('startBtn').innerText = "RADAR ACTIVE";
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('startBtn').className = "w-full bg-blue-900 py-4 rounded-xl font-black uppercase text-sm mb-2 opacity-50";
+        navigator.bluetooth.addEventListener('advertisementreceived', (e) => {
+          const id = e.device.id;
+          const name = e.device.name || "Unknown Device";
+          const rssi = e.rssi;
+          const time = Date.now();
+          devices.set(id, { id, name, rssi, time });
+          render();
+        });
+      } catch (e) { alert(e.message); }
+    }
+
+    document.getElementById('startBtn').addEventListener('click', startRadar);
+
+    function render() {
+      const now = Date.now();
+      const n = parseFloat(document.getElementById('envMode').value);
+      const limit = parseInt(document.getElementById('displayLimit').value);
+      const search = document.getElementById('quickSearch').value.toLowerCase();
+
+      for (let [id, data] of devices) { if (now - data.time > 8000) devices.delete(id); }
+      
+      const all = Array.from(devices.values()).map(d => {
+        const member = teamList.find(m => m.id === d.id);
+        const tx = member ? member.tx : DEFAULT_TX;
+        const dist = Math.pow(10, (tx - d.rssi) / (10 * n));
+        return { ...d, dist, isTeam: !!member };
+      });
+
+      const filtered = all.filter(d => !search || d.name.toLowerCase().includes(search) || d.id.toLowerCase().includes(search));
+      const sorted = filtered.sort((a, b) => (a.isTeam === b.isTeam) ? a.dist - b.dist : a.isTeam ? -1 : 1).slice(0, limit);
+
+      document.getElementById('deviceCount').innerText = `TOP ${sorted.length} / TOTAL ${all.length}`;
+      document.getElementById('deviceList').innerHTML = sorted.map(d => `
+        <div onclick="handleCardClick('${d.id}', '${d.name}', ${d.rssi})" class="item-card ${d.isTeam ? 'whitelist-card' : ''} flex justify-between items-center shadow-lg">
+          <div class="flex-1 overflow-hidden pr-2">
+            <div class="flex items-center space-x-2">
+              ${d.isTeam ? '<span class="bg-red-600 text-[8px] px-1 rounded font-black italic">CALIBRATED</span>' : ''}
+              <span class="device-name">${d.name}</span>
+            </div>
+            <div class="id-text-full">${d.id}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-black ${d.isTeam ? 'text-red-500' : 'text-blue-500'}">${d.dist.toFixed(1)}<span class="text-[10px] ml-0.5 text-gray-500 font-normal">m</span></div>
+            <div class="text-[9px] text-gray-600 uppercase font-bold">${d.rssi} dBm</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showDetailByName(name) {
+      const members = teamList.filter(m => m.name === name);
+      const txAvg = members[0].tx.toFixed(1);
+      alert(`Athlete: ${name}\nReference TX: ${txAvg} dBm\nRegistered IDs: ${members.length}`);
+    }
+    function closeModal() { document.getElementById('mapModal').style.display = 'none'; }
+    function clearTeam() { if(confirm('Clear Team?')) { teamList = []; saveAndRefresh(); } }
+    document.getElementById('stopBtn').onclick = () => location.reload();
   </script>
 </body>
 </html>
