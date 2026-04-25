@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Athlete Radar v4.8 - STABLE</title>
+  <title>Athlete Radar v4.9 - Smart Mapping</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body { background-color: #000; color: #fff; font-family: sans-serif; overflow-x: hidden; }
@@ -12,8 +12,12 @@
     .item-card { background: #111827; border-left: 5px solid #374151; margin-bottom: 6px; padding: 12px; border-radius: 12px; cursor: pointer; }
     .whitelist-card { border-left: 5px solid #ef4444 !important; background-color: #1e1b4b !important; }
     .team-badge { background: #1e1b4b; border: 1px solid #3b82f6; color: #fff; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; cursor: pointer; margin-bottom: 4px; }
+    
+    /* Modal & UI Elements */
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
-    .modal-content { background: #1f2937; padding: 24px; width: 100%; max-width: 340px; border-radius: 20px; border: 1px solid #374151; }
+    .modal-content { background: #1f2937; padding: 24px; width: 100%; max-width: 360px; border-radius: 20px; border: 1px solid #374151; max-height: 90vh; overflow-y: auto; }
+    .select-btn { background: #2d3748; border: 1px solid #4a5568; padding: 10px; border-radius: 12px; margin-bottom: 8px; text-align: left; width: 100%; transition: 0.2s; }
+    .select-btn:active { background: #3b82f6; }
   </style>
 </head>
 <body class="p-4">
@@ -21,23 +25,23 @@
   <div class="max-w-md mx-auto">
     <header class="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
       <div>
-        <h1 class="text-lg font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v4.8</h1>
-        <p class="text-[9px] text-gray-500 font-bold uppercase">Stable Mapping Mode</p>
+        <h1 class="text-lg font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v4.9</h1>
+        <p class="text-[9px] text-gray-500 font-bold uppercase">Smart ID Mapping</p>
       </div>
       <div id="statusTag" class="bg-red-900 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase">OFF</div>
     </header>
 
     <div class="mb-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
       <div class="flex justify-between items-center mb-2">
-        <label class="text-[9px] text-red-500 uppercase font-black italic">Team Whitelist</label>
-        <button onclick="clearTeam()" class="text-[9px] text-gray-600 underline">Clear All</button>
+        <label class="text-[9px] text-red-500 uppercase font-black italic tracking-wider">Team Whitelist</label>
+        <button onclick="clearTeam()" class="text-[9px] text-gray-600 underline font-bold">Clear All</button>
       </div>
       <div id="teamBadges" class="flex flex-wrap gap-2"></div>
     </div>
 
     <div class="grid grid-cols-2 gap-2 mb-3">
       <div class="bg-gray-800 p-2 rounded-lg border border-gray-700">
-        <label class="text-[8px] text-gray-500 block font-bold uppercase">Environment</label>
+        <label class="text-[8px] text-gray-500 block font-bold uppercase italic">Environment</label>
         <select id="envMode" class="w-full bg-transparent text-xs text-blue-400 font-bold outline-none">
           <option value="2.0">Open Field</option>
           <option value="2.7">Stadium</option>
@@ -45,13 +49,13 @@
         </select>
       </div>
       <div class="bg-gray-800 p-2 rounded-lg border border-gray-700">
-        <label class="text-[8px] text-gray-500 block font-bold uppercase">Quick Search</label>
+        <label class="text-[8px] text-gray-500 block font-bold uppercase italic">Search</label>
         <input type="text" id="quickSearch" placeholder="Filter..." class="w-full bg-transparent text-xs text-white outline-none">
       </div>
     </div>
 
     <button id="startBtn" class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase text-sm mb-2 shadow-lg active:scale-95 transition">Start Scanning</button>
-    <button id="stopBtn" class="w-full bg-gray-800 py-2 rounded-xl font-bold uppercase text-[10px] mb-4 border border-gray-700">Stop & Reset All</button>
+    <button id="stopBtn" class="w-full bg-gray-800 py-2 rounded-xl font-bold uppercase text-[10px] mb-4 border border-gray-700">Stop & Refresh</button>
 
     <div id="listArea">
       <div class="flex justify-between text-[9px] text-gray-600 mb-2 uppercase font-black px-1 italic">
@@ -59,23 +63,41 @@
         <span id="deviceCount">0 Found</span>
       </div>
       <div id="deviceList" class="space-y-1.5">
-        <p class="text-center text-gray-800 py-10 italic">Ready to track...</p>
+        <p class="text-center text-gray-800 py-10 italic">System Ready...</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="mapModal" class="modal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <h2 class="text-blue-500 font-black text-lg mb-1 uppercase italic">ID MAPPING</h2>
+      <p id="targetIDDisp" class="text-[9px] text-gray-500 mb-4 font-mono break-all"></p>
+      
+      <div class="mb-4">
+        <p class="text-[10px] text-red-500 font-bold uppercase mb-2">Select Athlete to Link:</p>
+        <div id="athleteOptions" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+          </div>
+      </div>
+
+      <div class="border-t border-gray-700 pt-4">
+        <button onclick="promptNewAthlete()" class="w-full bg-blue-600 py-3 rounded-xl font-bold uppercase text-xs mb-2">+ Register New Athlete</button>
+        <button onclick="closeModal()" class="w-full bg-gray-700 py-3 rounded-xl font-bold uppercase text-xs">Cancel</button>
       </div>
     </div>
   </div>
 
   <div id="detailModal" class="modal" onclick="closeModal()">
     <div class="modal-content text-center" onclick="event.stopPropagation()">
-      <h2 class="text-red-500 font-black text-lg mb-4 uppercase italic border-b border-gray-700 pb-2">Athlete Details</h2>
+      <h2 class="text-red-500 font-black text-lg mb-4 uppercase italic border-b border-gray-700 pb-2 font-bold">Athlete Details</h2>
       <div class="bg-black/50 p-4 rounded-xl mb-6 text-left">
         <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">Name</p>
-        <p id="modalName" class="text-white font-bold text-base break-all mb-4">Device Name</p>
-        <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">ID History</p>
-        <p id="modalID" class="text-blue-400 font-mono text-[10px] break-all">ID_STRING</p>
+        <p id="modalName" class="text-white font-bold text-base break-all mb-4 uppercase">Device Name</p>
+        <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">All Linked IDs</p>
+        <p id="modalID" class="text-blue-400 font-mono text-[10px] break-all"></p>
       </div>
       <div class="flex gap-2">
           <button onclick="closeModal()" class="flex-1 bg-gray-700 py-3 rounded-lg font-bold uppercase text-xs">Close</button>
-          <button id="modalDeleteBtn" class="hidden flex-none bg-red-800 px-4 py-3 rounded-lg font-bold uppercase text-xs">Remove</button>
+          <button id="modalDeleteBtn" class="flex-none bg-red-900 px-4 py-3 rounded-lg font-bold uppercase text-xs">Remove Team</button>
       </div>
     </div>
   </div>
@@ -85,6 +107,7 @@
     let devices = new Map();
     let teamList = [];
     let bluetoothScan = null;
+    let currentMappingID = null;
 
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
@@ -92,19 +115,13 @@
     const deviceList = document.getElementById('deviceList');
     const teamBadges = document.getElementById('teamBadges');
 
-    // โหลดข้อมูลทีม (ใช้ชื่อ Key ที่นิ่งที่สุด)
     window.onload = () => {
       const saved = localStorage.getItem('morboy_team_stable');
-      if (saved) {
-        try {
-          teamList = JSON.parse(saved);
-          renderTeamBadges();
-        } catch(e) { teamList = []; }
-      }
+      if (saved) { try { teamList = JSON.parse(saved); renderTeamBadges(); } catch(e) { teamList = []; } }
     };
 
     function renderTeamBadges() {
-      if (teamList.length === 0) { teamBadges.innerHTML = '<span class="text-[9px] text-gray-700 italic">No members.</span>'; return; }
+      if (teamList.length === 0) { teamBadges.innerHTML = '<span class="text-[9px] text-gray-700 italic font-bold">No members in whitelist.</span>'; return; }
       const uniqueNames = [...new Set(teamList.map(m => m.name))];
       teamBadges.innerHTML = uniqueNames.map((name) => `
         <div onclick="showDetailByName('${name}')" class="team-badge">
@@ -113,36 +130,66 @@
       `).join('');
     }
 
-    function showDetailByName(name) {
-      const members = teamList.filter(m => m.name === name);
-      document.getElementById('modalName').innerText = name;
-      document.getElementById('modalID').innerText = members.map(m => m.id).join('\n');
-      const delBtn = document.getElementById('modalDeleteBtn');
-      delBtn.classList.remove('hidden');
-      delBtn.onclick = () => { 
-        if(confirm(`Remove all IDs for ${name}?`)) { 
-          teamList = teamList.filter(m => m.name !== name); 
-          saveAndRefresh(); closeModal(); 
-        } 
-      };
-      document.getElementById('detailModal').style.display = 'flex';
-    }
-
     function handleCardClick(id, name) {
       const existingMember = teamList.find(m => m.id === id);
       if (existingMember) {
         showDetailByName(existingMember.name);
       } else {
-        const playerName = prompt(`พบอุปกรณ์ใหม่\nID: ${id.slice(0,8)}...\n\nกรุณาใส่ชื่อนักกีฬา (ใส่ชื่อเดิมเพื่อผูก ID เพิ่ม):`, name);
-        if (playerName) {
-          teamList.push({ id, name: playerName });
-          saveAndRefresh();
-        }
+        // เปิด Modal เลือก Mapping
+        currentMappingID = id;
+        document.getElementById('targetIDDisp').innerText = "Target ID: " + id;
+        renderMappingOptions();
+        document.getElementById('mapModal').style.display = 'flex';
       }
     }
 
-    function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
-    function clearTeam() { if(confirm('Clear all registered data?')) { teamList = []; saveAndRefresh(); } }
+    function renderMappingOptions() {
+      const optContainer = document.getElementById('athleteOptions');
+      const uniqueNames = [...new Set(teamList.map(m => m.name))];
+      
+      if (uniqueNames.length === 0) {
+        optContainer.innerHTML = '<p class="text-[10px] text-gray-600 italic">No history found.</p>';
+        return;
+      }
+      
+      optContainer.innerHTML = uniqueNames.map(name => `
+        <button onclick="linkToAthlete('${name}')" class="select-btn">
+          <span class="text-white font-bold text-xs uppercase italic">${name}</span>
+        </button>
+      `).join('');
+    }
+
+    function linkToAthlete(name) {
+      teamList.push({ id: currentMappingID, name: name });
+      saveAndRefresh();
+      closeModal();
+    }
+
+    function promptNewAthlete() {
+      const name = prompt("Enter New Athlete Name:");
+      if (name) {
+        teamList.push({ id: currentMappingID, name: name });
+        saveAndRefresh();
+        closeModal();
+      }
+    }
+
+    function showDetailByName(name) {
+      const members = teamList.filter(m => m.name === name);
+      document.getElementById('modalName').innerText = name;
+      document.getElementById('modalID').innerText = members.map(m => m.id).join('\n');
+      const delBtn = document.getElementById('modalDeleteBtn');
+      delBtn.onclick = () => { if(confirm(`Remove all data for ${name}?`)) { teamList = teamList.filter(m => m.name !== name); saveAndRefresh(); closeModal(); } };
+      document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function closeModal() { 
+      document.getElementById('mapModal').style.display = 'none'; 
+      document.getElementById('detailModal').style.display = 'none'; 
+    }
+
+    function clearTeam() { if(confirm('Clear all team data?')) { teamList = []; saveAndRefresh(); } }
+    
     function saveAndRefresh() { 
       localStorage.setItem('morboy_team_stable', JSON.stringify(teamList)); 
       renderTeamBadges(); 
@@ -151,27 +198,16 @@
 
     startBtn.onclick = async () => {
       try {
-        if (bluetoothScan) bluetoothScan.stop(); // เคลียร์ของเก่าถ้ามี
-
         bluetoothScan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true, keepRepeatedDevices: true });
-        
         statusTag.innerText = "RADAR ON";
         statusTag.className = "bg-green-600 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase";
         startBtn.innerText = "SCANNING ACTIVE...";
         startBtn.disabled = true;
-        
         navigator.bluetooth.addEventListener('advertisementreceived', handleSignal);
-      } catch (e) { 
-        alert("Error: " + e.message + "\nให้รีโหลดหน้าเว็บแล้วลองใหม่ครับ"); 
-        statusTag.innerText = "OFF";
-      }
+      } catch (e) { alert("Error: " + e.message); }
     };
 
-    stopBtn.onclick = () => {
-      if (confirm('ระบบจะหยุดทำงานและรีเฟรชหน้าใหม่ (Whitelist จะยังอยู่)')) {
-        location.reload();
-      }
-    };
+    stopBtn.onclick = () => location.reload();
 
     function handleSignal(event) {
       const id = event.device.id;
@@ -180,9 +216,7 @@
       const env = parseFloat(document.getElementById('envMode').value);
       const search = document.getElementById('quickSearch').value.toLowerCase();
       const dist = Math.pow(10, (TX_POWER - rssi) / (10 * env));
-      
       const isTeam = teamList.some(m => m.id === id || (name !== "Unknown Device" && m.name === name));
-
       if (search && !name.toLowerCase().includes(search) && !id.toLowerCase().includes(search)) return;
       devices.set(id, { id, name, rssi, dist, isTeam, time: Date.now() });
       render();
@@ -194,7 +228,6 @@
       const all = Array.from(devices.values());
       const teamItems = all.filter(d => d.isTeam).sort((a, b) => a.dist - b.dist);
       const generalItems = all.filter(d => !d.isTeam).sort((a, b) => a.dist - b.dist).slice(0, 10);
-
       const displayItems = [...teamItems, ...generalItems];
       document.getElementById('deviceCount').innerText = `${all.length} Total`;
 
