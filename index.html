@@ -3,24 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Athlete Radar v4.3 - High Contrast</title>
+  <title>Athlete Radar Pro v4.4 - Mor Boy Edition</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body { background-color: #000; color: #fff; font-family: sans-serif; }
-    /* ปรับสีการ์ดให้นิ่งและชัดขึ้น */
-    .item-card { background: #1a202c; border-left: 6px solid #4a5568; margin-bottom: 10px; padding: 16px; border-radius: 16px; transition: all 0.2s; cursor: pointer; }
-    /* การ์ดนักกีฬาในทีม - สีแดงสว่างและพื้นหลังน้ำเงินเข้ม */
+    /* เน้นความชัดเจนของชื่ออุปกรณ์ */
+    .device-name { color: #FFFFFF !important; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; }
+    .item-card { background: #1a202c; border-left: 6px solid #4a5568; margin-bottom: 10px; padding: 16px; border-radius: 16px; cursor: pointer; transition: 0.2s; }
     .whitelist-card { border-left: 6px solid #f56565 !important; background-color: #2c314d !important; }
-    /* ชื่ออุปกรณ์ - เน้นขาวสว่าง */
-    .device-name { color: #ffffff; font-size: 1.125rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.025em; }
-    /* ID และรายละเอียด - สีเทาสว่าง */
-    .id-label { font-family: monospace; color: #a0aec0; font-size: 11px; margin-top: 2px; }
-    .team-id { color: #feb2b2; font-weight: bold; }
-    /* ระยะทาง - ใหญ่สะใจ */
-    .dist-val { font-size: 1.875rem; font-weight: 900; line-height: 1; }
-    /* Pop-up รายละเอียด */
+    /* ส่วนแสดงผลทีมด้านบน */
+    .team-badge { background: #2d3748; border: 1px solid #4a5568; color: #fff; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .team-badge:active { background: #4a5568; }
+    /* Modal ดูรายละเอียด */
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
-    .modal-content { background: #2d3748; padding: 24px; rounded-2xl: 1.5rem; width: 100%; max-width: 320px; border: 1px solid #4a5568; border-radius: 20px; }
+    .modal-content { background: #2d3748; padding: 24px; width: 100%; max-width: 320px; border-radius: 24px; border: 1px solid #4a5568; }
   </style>
 </head>
 <body class="p-4">
@@ -28,23 +24,24 @@
   <div class="max-w-md mx-auto">
     <header class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
       <div>
-        <h1 class="text-xl font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v4.3</h1>
-        <p class="text-[10px] text-gray-500 font-bold uppercase">Enhanced Visibility Mode</p>
+        <h1 class="text-xl font-black text-blue-500 italic uppercase">Team Radar v4.4</h1>
+        <p class="text-[10px] text-gray-500 font-bold uppercase">Visibility & Team Inspection</p>
       </div>
       <div id="statusTag" class="bg-red-900 text-[10px] px-3 py-1 rounded-full font-bold uppercase">OFF</div>
     </header>
 
     <div class="mb-4 bg-gray-900 p-4 rounded-2xl border border-gray-800">
-      <div class="flex justify-between items-center mb-2 border-b border-gray-800 pb-2">
-        <label class="text-[10px] text-red-500 uppercase font-black italic">My Team Athletes</label>
+      <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
+        <label class="text-[10px] text-red-500 uppercase font-black italic">Team Whitelist (Tap to view info)</label>
         <button onclick="clearTeam()" class="text-[10px] text-gray-500 underline">Clear All</button>
       </div>
-      <div id="teamBadges" class="flex flex-wrap gap-2 min-h-[30px] pt-1"></div>
+      <div id="teamBadges" class="flex flex-wrap gap-2 min-h-[40px]">
+        </div>
     </div>
 
     <div class="grid grid-cols-2 gap-2 mb-4">
       <div class="bg-gray-800 p-3 rounded-xl">
-        <label class="text-[9px] text-gray-400 block mb-1 font-bold uppercase">Environment</label>
+        <label class="text-[9px] text-gray-400 block mb-1 font-bold uppercase">Env</label>
         <select id="envMode" class="w-full bg-transparent text-sm text-blue-400 font-black outline-none">
           <option value="2.0">Open Field</option>
           <option value="2.7">Stadium</option>
@@ -52,21 +49,21 @@
         </select>
       </div>
       <div class="bg-gray-800 p-3 rounded-xl">
-        <label class="text-[9px] text-gray-400 block mb-1 font-bold uppercase">Search</label>
+        <label class="text-[9px] text-gray-400 block mb-1 font-bold uppercase">Quick Search</label>
         <input type="text" id="quickSearch" placeholder="Name/ID..." class="w-full bg-transparent text-sm text-white font-bold outline-none">
       </div>
     </div>
 
-    <button id="startBtn" class="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase text-base shadow-2xl mb-6 active:scale-95 transition tracking-widest">Start Scanning</button>
+    <button id="startBtn" class="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase text-base shadow-2xl mb-6 active:scale-95 transition">Start Radar</button>
     <button id="stopBtn" class="hidden w-full bg-gray-800 py-5 rounded-2xl font-black uppercase text-base mb-6 border border-gray-700">Stop System</button>
 
     <div id="listArea">
-      <div class="flex justify-between text-[10px] text-gray-500 mb-3 uppercase font-black px-1 italic tracking-widest">
-        <span>Tap to Register / View Info</span>
+      <div class="flex justify-between text-[10px] text-gray-500 mb-3 uppercase font-black px-1 italic">
+        <span>Nearby Devices</span>
         <span id="deviceCount">0 Found</span>
       </div>
       <div id="deviceList" class="space-y-3">
-        <p class="text-center text-gray-700 py-10 italic">Ready to track...</p>
+        <p class="text-center text-gray-800 py-10 italic font-bold">Waiting for start...</p>
       </div>
     </div>
   </div>
@@ -74,13 +71,16 @@
   <div id="detailModal" class="modal" onclick="closeModal()">
     <div class="modal-content text-center" onclick="event.stopPropagation()">
       <h2 class="text-red-500 font-black text-xl mb-2 uppercase italic">Athlete Info</h2>
-      <div class="bg-black/30 p-4 rounded-xl mb-4 border border-gray-700 text-left">
-        <p class="text-[10px] text-gray-500 uppercase font-bold">Device Name</p>
-        <p id="modalName" class="text-white font-bold text-lg mb-2">Unknown</p>
-        <p class="text-[10px] text-gray-500 uppercase font-bold">Device ID (Unique)</p>
-        <p id="modalID" class="text-blue-400 font-mono text-sm break-all">ID_HERE</p>
+      <div class="bg-black/40 p-4 rounded-xl mb-4 border border-gray-700 text-left">
+        <p class="text-[10px] text-gray-500 uppercase font-bold">Full Name</p>
+        <p id="modalName" class="text-white font-bold text-lg mb-3 break-all">Unknown Device</p>
+        <p class="text-[10px] text-gray-500 uppercase font-bold">Device ID</p>
+        <p id="modalID" class="text-blue-400 font-mono text-xs break-all">ID_STRING</p>
       </div>
-      <button onclick="closeModal()" class="w-full bg-gray-700 py-3 rounded-xl font-bold uppercase text-sm">Close</button>
+      <div class="flex gap-2">
+          <button id="modalActionBtn" onclick="closeModal()" class="flex-1 bg-blue-600 py-3 rounded-xl font-bold uppercase text-xs">OK</button>
+          <button id="modalDeleteBtn" class="hidden flex-none bg-red-900 px-4 py-3 rounded-xl font-bold uppercase text-xs">Remove</button>
+      </div>
     </div>
   </div>
 
@@ -102,38 +102,44 @@
     };
 
     function renderTeamBadges() {
-      if (teamList.length === 0) { teamBadges.innerHTML = '<span class="text-[10px] text-gray-700 italic">No athletes in team.</span>'; return; }
+      if (teamList.length === 0) { teamBadges.innerHTML = '<span class="text-[10px] text-gray-700 italic">No athletes registered.</span>'; return; }
       teamBadges.innerHTML = teamList.map((m, index) => `
-        <div class="bg-blue-600/30 border border-blue-500 px-3 py-1 rounded-full flex items-center space-x-2">
-          <span class="text-[11px] font-black text-white uppercase">${m.name.slice(0,12)}</span>
-          <button onclick="removeMember(${index})" class="text-red-500 font-black text-sm">×</button>
+        <div onclick="showDetailByIndex(${index})" class="team-badge">
+          ${m.name.slice(0,15)}${m.name.length > 15 ? '..' : ''}
         </div>
       `).join('');
     }
 
-    function removeMember(index) { teamList.splice(index, 1); saveAndRefresh(); }
-    function clearTeam() { if(confirm('Clear Team?')) { teamList = []; saveAndRefresh(); } }
-    function saveAndRefresh() { localStorage.setItem('morboy_team_v2', JSON.stringify(teamList)); renderTeamBadges(); render(); }
+    function showDetailByIndex(index) {
+      const m = teamList[index];
+      document.getElementById('modalName').innerText = m.name;
+      document.getElementById('modalID').innerText = m.id;
+      const delBtn = document.getElementById('modalDeleteBtn');
+      delBtn.classList.remove('hidden');
+      delBtn.onclick = () => { if(confirm('Remove this athlete?')) { teamList.splice(index, 1); saveAndRefresh(); closeModal(); } };
+      document.getElementById('detailModal').style.display = 'flex';
+    }
 
     function handleCardClick(id, name, isTeam) {
       if (isTeam) {
-        // ถ้าเป็นทีมอยู่แล้ว ให้เปิดดูรายละเอียด
         document.getElementById('modalName').innerText = name;
         document.getElementById('modalID').innerText = id;
+        document.getElementById('modalDeleteBtn').classList.add('hidden');
         document.getElementById('detailModal').style.display = 'flex';
       } else {
-        // ถ้ายังไม่เป็นทีม ให้ลงทะเบียน
         teamList.push({ id, name });
         saveAndRefresh();
       }
     }
 
     function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
+    function clearTeam() { if(confirm('Clear Team?')) { teamList = []; saveAndRefresh(); } }
+    function saveAndRefresh() { localStorage.setItem('morboy_team_v2', JSON.stringify(teamList)); renderTeamBadges(); render(); }
 
     startBtn.onclick = async () => {
       try {
         bluetoothScan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true, keepRepeatedDevices: true });
-        statusTag.innerText = "ON";
+        statusTag.innerText = "RADAR ON";
         statusTag.className = "bg-green-600 text-[10px] px-3 py-1 rounded-full font-bold uppercase";
         startBtn.classList.add('hidden');
         stopBtn.classList.remove('hidden');
@@ -164,22 +170,19 @@
       const teamItems = all.filter(d => d.isTeam);
       const generalItems = all.filter(d => !d.isTeam).sort((a, b) => a.dist - b.dist);
       const displayItems = [...teamItems, ...generalItems].slice(0, 15);
-      document.getElementById('deviceCount').innerText = `${devices.size} Devices`;
-
-      if (displayItems.length === 0) { deviceList.innerHTML = '<p class="text-gray-800 py-10 italic">Scanning...</p>'; return; }
+      document.getElementById('deviceCount').innerText = `${devices.size} In Range`;
 
       deviceList.innerHTML = displayItems.map((d) => `
         <div onclick="handleCardClick('${d.id}', '${d.name}', ${d.isTeam})" class="item-card ${d.isTeam ? 'whitelist-card' : ''} flex justify-between items-center shadow-lg">
           <div class="flex-1 overflow-hidden pr-2 text-left">
             <div class="flex items-center space-x-2 mb-1">
-              ${d.isTeam ? '<span class="tag-team">ATHLETE</span>' : ''}
+              ${d.isTeam ? '<span class="bg-red-600 text-[8px] px-1 py-0.5 rounded font-black">TEAM</span>' : ''}
               <span class="device-name truncate">${d.name}</span>
             </div>
-            <div class="id-label">ID: <span class="${d.isTeam ? 'team-id' : ''}">${d.id.slice(0,12)}...</span></div>
-            <div class="id-label uppercase">Signal: ${d.rssi} dBm</div>
+            <div class="text-[10px] text-gray-500 font-mono">ID: ${d.id.slice(0,10)}... | ${d.rssi} dBm</div>
           </div>
           <div class="text-right">
-            <div class="dist-val ${d.isTeam ? 'text-red-500' : 'text-blue-500'}">${d.dist.toFixed(1)}<span class="text-xs ml-1 text-gray-500 font-normal">m</span></div>
+            <div class="text-3xl font-black ${d.isTeam ? 'text-red-500' : 'text-blue-400'}">${d.dist.toFixed(1)}<span class="text-xs ml-1 text-gray-500 font-normal">m</span></div>
           </div>
         </div>
       `).join('');
