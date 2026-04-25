@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Athlete Radar Pro v4.6 - Multi-ID Mode</title>
+  <title>Athlete Radar Pro v4.7 - Top 10 Mode</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body { background-color: #000; color: #fff; font-family: sans-serif; }
@@ -21,15 +21,15 @@
   <div class="max-w-md mx-auto">
     <header class="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
       <div>
-        <h1 class="text-lg font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v4.6</h1>
-        <p class="text-[9px] text-gray-500 font-bold uppercase">Multi-ID Mapping Mode</p>
+        <h1 class="text-lg font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v4.7</h1>
+        <p class="text-[9px] text-gray-500 font-bold uppercase italic">Top 10 Nearby Focus</p>
       </div>
       <div id="statusTag" class="bg-red-900 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase">OFF</div>
     </header>
 
     <div class="mb-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
       <div class="flex justify-between items-center mb-2">
-        <label class="text-[9px] text-red-500 uppercase font-black italic">Team Members</label>
+        <label class="text-[9px] text-red-500 uppercase font-black italic tracking-wider">Team Whitelist</label>
         <button onclick="clearTeam()" class="text-[9px] text-gray-600 underline">Clear All</button>
       </div>
       <div id="teamBadges" class="flex flex-wrap gap-2"></div>
@@ -45,7 +45,7 @@
         </select>
       </div>
       <div class="bg-gray-800 p-2 rounded-lg">
-        <label class="text-[8px] text-gray-500 block font-bold uppercase italic">Quick Search</label>
+        <label class="text-[8px] text-gray-500 block font-bold uppercase italic font-mono">Quick Search</label>
         <input type="text" id="quickSearch" placeholder="Filter..." class="w-full bg-transparent text-xs text-white outline-none">
       </div>
     </div>
@@ -55,27 +55,27 @@
 
     <div id="listArea">
       <div class="flex justify-between text-[9px] text-gray-600 mb-2 uppercase font-black px-1 italic">
-        <span>Nearby Devices (Tap to Sync)</span>
-        <span id="deviceCount">0 Found</span>
+        <span>TOP 10 NEARBY DEVICES</span>
+        <span id="deviceCount">0 Total</span>
       </div>
       <div id="deviceList" class="space-y-1.5">
-        <p class="text-center text-gray-800 py-10 italic">Ready to track...</p>
+        <p class="text-center text-gray-800 py-10 italic">System Ready...</p>
       </div>
     </div>
   </div>
 
   <div id="detailModal" class="modal" onclick="closeModal()">
     <div class="modal-content text-center" onclick="event.stopPropagation()">
-      <h2 class="text-red-500 font-black text-lg mb-4 uppercase italic border-b border-gray-700 pb-2">Athlete Info</h2>
+      <h2 class="text-red-500 font-black text-lg mb-4 uppercase italic border-b border-gray-700 pb-2">Athlete Details</h2>
       <div class="bg-black/50 p-4 rounded-xl mb-6 text-left">
         <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">Name</p>
         <p id="modalName" class="text-white font-bold text-base break-all mb-4">Device Name</p>
-        <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">Device ID</p>
+        <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">Associated IDs</p>
         <p id="modalID" class="text-blue-400 font-mono text-[10px] break-all">ID_STRING</p>
       </div>
       <div class="flex gap-2">
           <button onclick="closeModal()" class="flex-1 bg-gray-700 py-3 rounded-lg font-bold uppercase text-xs">Close</button>
-          <button id="modalDeleteBtn" class="hidden flex-none bg-red-800 px-4 py-3 rounded-lg font-bold uppercase text-xs">Remove</button>
+          <button id="modalDeleteBtn" class="hidden flex-none bg-red-800 px-4 py-3 rounded-lg font-bold uppercase text-xs">Remove Team</button>
       </div>
     </div>
   </div>
@@ -99,7 +99,6 @@
 
     function renderTeamBadges() {
       if (teamList.length === 0) { teamBadges.innerHTML = '<span class="text-[9px] text-gray-700 italic">No members.</span>'; return; }
-      // โชว์ชื่อที่ไม่ซ้ำกันใน Team Badges
       const uniqueNames = [...new Set(teamList.map(m => m.name))];
       teamBadges.innerHTML = uniqueNames.map((name) => `
         <div onclick="showDetailByName('${name}')" class="team-badge">
@@ -115,7 +114,7 @@
       const delBtn = document.getElementById('modalDeleteBtn');
       delBtn.classList.remove('hidden');
       delBtn.onclick = () => { 
-        if(confirm(`Remove all IDs for ${name}?`)) { 
+        if(confirm(`Remove athlete: ${name}?`)) { 
           teamList = teamList.filter(m => m.name !== name); 
           saveAndRefresh(); closeModal(); 
         } 
@@ -128,7 +127,7 @@
       if (existingMember) {
         showDetailByName(existingMember.name);
       } else {
-        const playerName = prompt(`ตรวจพบอุปกรณ์ใหม่\nID: ${id.slice(0,8)}...\n\nกรุณาใส่ชื่อนักกีฬา (ใช้ชื่อเดิมเพื่อผูก ID เพิ่ม):`, name);
+        const playerName = prompt(`Add New Athlete?\nID: ${id.slice(0,8)}...\n\nName:`, name);
         if (playerName) {
           teamList.push({ id, name: playerName });
           saveAndRefresh();
@@ -137,7 +136,7 @@
     }
 
     function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
-    function clearTeam() { if(confirm('Clear all registered data?')) { teamList = []; saveAndRefresh(); } }
+    function clearTeam() { if(confirm('Clear all team data?')) { teamList = []; saveAndRefresh(); } }
     function saveAndRefresh() { localStorage.setItem('morboy_team_v2', JSON.stringify(teamList)); renderTeamBadges(); render(); }
 
     startBtn.onclick = async () => {
@@ -157,45 +156,3 @@
       const id = event.device.id;
       const name = event.device.name || "Unknown Device";
       const rssi = event.rssi;
-      const env = parseFloat(document.getElementById('envMode').value);
-      const search = document.getElementById('quickSearch').value.toLowerCase();
-      const dist = Math.pow(10, (TX_POWER - rssi) / (10 * env));
-      
-      // ตรวจสอบว่าเป็นทีมหรือไม่ (เช็คทั้ง ID และ ชื่อ)
-      const isTeam = teamList.some(m => 
-        m.id === id || (name !== "Unknown Device" && m.name === name)
-      );
-
-      if (search && !name.toLowerCase().includes(search) && !id.toLowerCase().includes(search)) return;
-      devices.set(id, { id, name, rssi, dist, isTeam, time: Date.now() });
-      render();
-    }
-
-    function render() {
-      const now = Date.now();
-      for (let [id, data] of devices) { if (now - data.time > 8000) devices.delete(id); }
-      const all = Array.from(devices.values());
-      const teamItems = all.filter(d => d.isTeam);
-      const generalItems = all.filter(d => !d.isTeam).sort((a, b) => a.dist - b.dist);
-      const displayItems = [...teamItems, ...generalItems].slice(0, 20);
-      document.getElementById('deviceCount').innerText = `${devices.size} Devices`;
-
-      deviceList.innerHTML = displayItems.map((d) => `
-        <div onclick="handleCardClick('${d.id}', '${d.name}')" class="item-card ${d.isTeam ? 'whitelist-card' : ''} flex justify-between items-center">
-          <div class="flex-1 overflow-hidden pr-2 text-left">
-            <div class="flex items-center space-x-2">
-              ${d.isTeam ? '<span class="bg-red-600 text-[8px] px-1 rounded font-black uppercase">Athlete</span>' : ''}
-              <span class="device-name">${d.name}</span>
-            </div>
-            <div class="id-text-full">${d.id}</div>
-            <div class="text-[9px] text-gray-500 mt-1 uppercase font-mono">Signal: ${d.rssi} dBm</div>
-          </div>
-          <div class="text-right flex-none">
-            <div class="text-2xl font-black ${d.isTeam ? 'text-red-500' : 'text-blue-500'}">${d.dist.toFixed(1)}<span class="text-[10px] ml-0.5 text-gray-500 font-normal">m</span></div>
-          </div>
-        </div>
-      `).join('');
-    }
-  </script>
-</body>
-</html>
