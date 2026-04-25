@@ -3,163 +3,81 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Athlete Tracker Pro - Smartwatch Focus</title>
+  <title>Athlete Radar - Mor Boy Edition</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .hr-value { font-size: 6rem; line-height: 1; }
-    .pulse { animation: pulse-red 1s infinite; }
-    @keyframes pulse-red { 0% { transform: scale(0.95); } 70% { transform: scale(1.05); } 100% { transform: scale(0.95); } }
+    .radar-pulse { animation: radar-wave 2s infinite ease-out; }
+    @keyframes radar-wave { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); } 100% { box-shadow: 0 0 0 30px rgba(59, 130, 246, 0); } }
+    .device-card { transition: all 0.3s ease; }
   </style>
 </head>
 <body class="bg-black text-white p-4 font-sans min-h-screen">
 
   <div class="max-w-md mx-auto">
-    <header class="flex justify-between items-center mb-4 border-b border-gray-800 pb-4">
+    <header class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
       <div>
-        <h1 class="text-xl font-bold text-blue-500 italic">ATHLETE TRACKER</h1>
-        <p class="text-[10px] text-gray-500 uppercase tracking-widest">Smartwatch Screening Mode</p>
+        <h1 class="text-xl font-bold text-blue-500">ATHLETE RADAR</h1>
+        <p class="text-[10px] text-gray-500 uppercase tracking-widest">Passive Scanning Mode</p>
       </div>
-      <div id="connectionStatus" class="text-[10px] bg-gray-800 px-3 py-1 rounded-full text-gray-400 font-bold">READY</div>
+      <div id="scanStatus" class="text-[10px] bg-red-900 px-3 py-1 rounded-full text-white font-bold">OFF</div>
     </header>
 
     <div class="mb-4">
-      <label class="text-[10px] text-gray-500 uppercase font-bold mb-2 block tracking-widest">Environment (สภาพแวดล้อม)</label>
-      <select id="envMode" class="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 px-3 text-sm text-blue-400 outline-none">
+      <label class="text-[10px] text-gray-500 uppercase font-bold mb-2 block">Environment Mode</label>
+      <select id="envMode" class="w-full bg-gray-900 border border-gray-700 rounded-xl py-3 px-3 text-sm text-blue-400">
         <option value="2.0">สนามกลางแจ้ง (Open Field)</option>
         <option value="2.7">สนามกีฬาคนเยอะ (Crowded Stadium)</option>
-        <option value="3.5">ในอาคาร/มีผนัง (Indoor/Obstacles)</option>
+        <option value="3.5">ในอาคาร (Indoor/Obstacles)</option>
       </select>
     </div>
 
-    <div class="bg-gray-900 rounded-3xl p-6 shadow-2xl mb-6 border border-gray-800 relative">
-      <div id="hrSection" class="text-center">
-        <div class="flex justify-center items-baseline text-red-600">
-          <span id="hrDisplay" class="hr-value font-black">--</span>
-          <span id="hrUnit" class="text-xl ml-2 font-black">BPM</span>
+    <button onclick="startRadarScan()" id="radarBtn" class="w-full mb-6 bg-blue-600 hover:bg-blue-500 text-white font-black py-6 rounded-3xl shadow-lg uppercase tracking-widest transition active:scale-95">
+      Start Passive Radar
+    </button>
+
+    <div id="resultsArea" class="space-y-4">
+      <div class="bg-gray-900 rounded-3xl p-6 border border-gray-700 relative overflow-hidden" id="mainDisplay">
+        <p class="text-[10px] text-gray-500 uppercase font-bold mb-2">Nearest Athlete</p>
+        <h2 id="nearestName" class="text-2xl font-black text-white italic truncate">Waiting...</h2>
+        
+        <div class="grid grid-cols-2 gap-4 mt-6">
+          <div class="bg-black bg-opacity-40 p-4 rounded-2xl border border-gray-800">
+            <p class="text-[10px] text-gray-500 uppercase font-bold">Distance</p>
+            <p class="text-2xl font-black text-blue-400"><span id="distDisplay">--</span> <span class="text-xs font-normal">m</span></p>
+          </div>
+          <div class="bg-black bg-opacity-40 p-4 rounded-2xl border border-gray-800">
+            <p class="text-[10px] text-gray-500 uppercase font-bold">Signal (RSSI)</p>
+            <p class="text-2xl font-black text-yellow-500"><span id="rssiDisplay">--</span> <span class="text-xs font-normal">dBm</span></p>
+          </div>
         </div>
-        <p id="hrStatus" class="text-[10px] text-gray-500 mt-2">Connecting to Watch...</p>
       </div>
-
-      <div class="grid grid-cols-2 gap-4 mt-8 bg-black bg-opacity-40 p-4 rounded-2xl border border-gray-800">
-        <div class="text-center border-r border-gray-800">
-          <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Distance (Est.)</p>
-          <p class="text-2xl font-black text-blue-400"><span id="distDisplay">0.0</span> <span class="text-xs">m</span></p>
-        </div>
-        <div class="text-center">
-          <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Signal (RSSI)</p>
-          <p class="text-2xl font-black text-yellow-500"><span id="rssiDisplay">--</span> <span class="text-xs">dBm</span></p>
-        </div>
-      </div>
-      
-      <button onclick="connectWatch()" id="scanBtn" class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl shadow-lg uppercase tracking-wider active:scale-95 transition">
-        Scan Smartwatch
-      </button>
     </div>
 
-    <div class="bg-gray-900 rounded-2xl p-4 border border-gray-800 mb-4">
-      <canvas id="hrChart" height="150"></canvas>
-    </div>
-
-    <div id="deviceInfo" class="hidden text-[10px] text-gray-400 text-center uppercase bg-gray-900 py-2 rounded-lg border border-gray-800">
-      Watch: <span id="deviceName" class="text-blue-500"></span>
-    </div>
+    <p class="text-[10px] text-gray-600 mt-8 text-center italic uppercase">
+      *Requires Chrome Android with Experimental Features Enabled
+    </p>
   </div>
 
   <script>
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzRGLwwocunBFN7i-nBra8uKjet3S4sx1qGDowxsYmrNS6ziPY_Z3UkzNdAE18QNcVV4Q/exec";
-    let bluetoothDevice;
-    let hrChart;
-    const TX_POWER = -59; 
+    const TX_POWER = -59; // RSSI อ้างอิงที่ระยะ 1 เมตร
 
-    // Chart Setup
-    const ctx = document.getElementById('hrChart').getContext('2d');
-    hrChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels: [], datasets: [{ data: [], borderColor: '#dc2626', borderWidth: 2, tension: 0.4, pointRadius: 0 }] },
-      options: { responsive: true, scales: { y: { min: 40, max: 200, grid: { color: '#111827' } }, x: { display: false } }, plugins: { legend: { display: false } } }
-    });
+    async function startRadarScan() {
+      const statusLabel = document.getElementById('scanStatus');
+      const radarBtn = document.getElementById('radarBtn');
 
-    async function connectWatch() {
-      const status = document.getElementById('connectionStatus');
+      if (!('bluetooth' in navigator) || !navigator.bluetooth.requestLEScan) {
+        alert("เบราว์เซอร์นี้ไม่รองรับระบบ Radar Scan กรุณาใช้ Chrome Android และเปิด Experimental Flag");
+        return;
+      }
+
       try {
-        status.innerText = "FILTERING WATCHES...";
-        
-        // กรองเฉพาะอุปกรณ์ที่ระบุชื่อยี่ห้อ หรือมี Service ยอดนิยม
-        bluetoothDevice = await navigator.bluetooth.requestDevice({
-          filters: [
-            { namePrefix: 'Garmin' }, { namePrefix: 'Forerunner' }, { namePrefix: 'Fenix' },
-            { namePrefix: 'Amazfit' }, { namePrefix: 'GTS' }, { namePrefix: 'GTR' },
-            { namePrefix: 'Huawei' }, { namePrefix: 'Watch' }, { namePrefix: 'Samsung' },
-            { namePrefix: 'Suunto' }, { namePrefix: 'Coros' }, { namePrefix: 'Polar' },
-            { namePrefix: 'Magene' }, { services: ['heart_rate'] } 
-          ],
-          optionalServices: ['heart_rate', 'battery_service', 'device_information']
-        });
+        statusLabel.innerText = "RADAR ON";
+        statusLabel.className = "text-[10px] bg-green-600 px-3 py-1 rounded-full text-white font-bold";
+        radarBtn.innerText = "RADAR ACTIVE...";
+        radarBtn.classList.add('radar-pulse');
+        radarBtn.disabled = true;
 
-        status.innerText = "CONNECTED";
-        const server = await bluetoothDevice.gatt.connect();
-        
-        document.getElementById('deviceName').innerText = bluetoothDevice.name;
-        document.getElementById('deviceInfo').classList.remove('hidden');
-        document.getElementById('scanBtn').classList.add('hidden');
-
-        // พยายามดึงค่า HR ถ้ามี
-        try {
-          const service = await server.getPrimaryService('heart_rate');
-          const characteristic = await service.getCharacteristic('heart_rate_measurement');
-          await characteristic.startNotifications();
-          characteristic.addEventListener('characteristicvaluechanged', (e) => {
-            const hr = e.target.value.getUint8(1);
-            updateHRUI(hr);
-          });
-          document.getElementById('hrStatus').innerText = "Real-time HR Active";
-          document.getElementById('hrDisplay').classList.add('pulse');
-        } catch (e) {
-          document.getElementById('hrDisplay').innerText = "OK"; // เชื่อมต่อได้แต่ไม่มี HR
-          document.getElementById('hrUnit').innerText = "";
-          document.getElementById('hrStatus').innerText = "Signal Tracking Only";
-        }
-
-        monitorSignal();
-
-      } catch (error) {
-        console.error(error);
-        status.innerText = "NOT FOUND";
-      }
-    }
-
-    function updateHRUI(hr) {
-      document.getElementById('hrDisplay').innerText = hr;
-      const now = new Date().toLocaleTimeString();
-      hrChart.data.labels.push(now);
-      hrChart.data.datasets[0].data.push(hr);
-      if(hrChart.data.labels.length > 20) { hrChart.data.labels.shift(); hrChart.data.datasets[0].data.shift(); }
-      hrChart.update('none');
-      sendToSheets(hr);
-    }
-
-    function sendToSheets(hrValue) {
-      const payload = {
-        name: bluetoothDevice.name,
-        hr: hrValue,
-        distance: document.getElementById('distDisplay').innerText,
-        rssi: document.getElementById('rssiDisplay').innerText
-      };
-      fetch(WEB_APP_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
-    }
-
-    function monitorSignal() {
-      if (bluetoothDevice && bluetoothDevice.gatt.connected) {
-        const rssi = -50 - Math.floor(Math.random() * 20); 
-        const envN = parseFloat(document.getElementById('envMode').value);
-        const distance = Math.pow(10, (TX_POWER - rssi) / (10 * envN));
-        
-        document.getElementById('rssiDisplay').innerText = rssi;
-        document.getElementById('distDisplay').innerText = distance.toFixed(1);
-        setTimeout(monitorSignal, 2000);
-      }
-    }
-  </script>
-</body>
-</html>
+        // เริ่มต้นการดักฟัง (Passive Scanning)
+        const scan = await navigator.bluetooth.requestLEScan({
+          acceptAllAdvertisements: true,
