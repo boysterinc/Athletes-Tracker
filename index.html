@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Athlete Radar Pro v4.7 - Top 10 Mode</title>
+  <title>Athlete Radar v4.8 - STABLE</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    body { background-color: #000; color: #fff; font-family: sans-serif; }
+    body { background-color: #000; color: #fff; font-family: sans-serif; overflow-x: hidden; }
     .device-name { color: #FFFFFF !important; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; line-height: 1.2; word-break: break-all; }
-    .id-text-full { font-family: monospace; color: #9ca3af; font-size: 10px; line-height: 1; margin-top: 4px; word-break: break-all; }
-    .item-card { background: #111827; border-left: 5px solid #374151; margin-bottom: 6px; padding: 12px; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+    .id-text-full { font-family: monospace; color: #9ca3af; font-size: 10px; line-height: 1.2; margin-top: 4px; word-break: break-all; }
+    .item-card { background: #111827; border-left: 5px solid #374151; margin-bottom: 6px; padding: 12px; border-radius: 12px; cursor: pointer; }
     .whitelist-card { border-left: 5px solid #ef4444 !important; background-color: #1e1b4b !important; }
-    .team-badge { background: #1e1b4b; border: 1px solid #3b82f6; color: #fff; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; cursor: pointer; }
+    .team-badge { background: #1e1b4b; border: 1px solid #3b82f6; color: #fff; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; cursor: pointer; margin-bottom: 4px; }
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
     .modal-content { background: #1f2937; padding: 24px; width: 100%; max-width: 340px; border-radius: 20px; border: 1px solid #374151; }
   </style>
@@ -21,45 +21,45 @@
   <div class="max-w-md mx-auto">
     <header class="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
       <div>
-        <h1 class="text-lg font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v4.7</h1>
-        <p class="text-[9px] text-gray-500 font-bold uppercase italic">Top 10 Nearby Focus</p>
+        <h1 class="text-lg font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v4.8</h1>
+        <p class="text-[9px] text-gray-500 font-bold uppercase">Stable Mapping Mode</p>
       </div>
       <div id="statusTag" class="bg-red-900 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase">OFF</div>
     </header>
 
     <div class="mb-4 bg-gray-900 p-3 rounded-xl border border-gray-800">
       <div class="flex justify-between items-center mb-2">
-        <label class="text-[9px] text-red-500 uppercase font-black italic tracking-wider">Team Whitelist</label>
+        <label class="text-[9px] text-red-500 uppercase font-black italic">Team Whitelist</label>
         <button onclick="clearTeam()" class="text-[9px] text-gray-600 underline">Clear All</button>
       </div>
       <div id="teamBadges" class="flex flex-wrap gap-2"></div>
     </div>
 
     <div class="grid grid-cols-2 gap-2 mb-3">
-      <div class="bg-gray-800 p-2 rounded-lg">
-        <label class="text-[8px] text-gray-500 block font-bold uppercase italic">Environment</label>
+      <div class="bg-gray-800 p-2 rounded-lg border border-gray-700">
+        <label class="text-[8px] text-gray-500 block font-bold uppercase">Environment</label>
         <select id="envMode" class="w-full bg-transparent text-xs text-blue-400 font-bold outline-none">
           <option value="2.0">Open Field</option>
           <option value="2.7">Stadium</option>
           <option value="3.5">Indoor</option>
         </select>
       </div>
-      <div class="bg-gray-800 p-2 rounded-lg">
-        <label class="text-[8px] text-gray-500 block font-bold uppercase italic font-mono">Quick Search</label>
+      <div class="bg-gray-800 p-2 rounded-lg border border-gray-700">
+        <label class="text-[8px] text-gray-500 block font-bold uppercase">Quick Search</label>
         <input type="text" id="quickSearch" placeholder="Filter..." class="w-full bg-transparent text-xs text-white outline-none">
       </div>
     </div>
 
-    <button id="startBtn" class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase text-sm mb-4 active:scale-95 transition">Start Scanning</button>
-    <button id="stopBtn" class="hidden w-full bg-gray-800 py-4 rounded-xl font-black uppercase text-sm mb-4">Stop System</button>
+    <button id="startBtn" class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase text-sm mb-2 shadow-lg active:scale-95 transition">Start Scanning</button>
+    <button id="stopBtn" class="w-full bg-gray-800 py-2 rounded-xl font-bold uppercase text-[10px] mb-4 border border-gray-700">Stop & Reset All</button>
 
     <div id="listArea">
       <div class="flex justify-between text-[9px] text-gray-600 mb-2 uppercase font-black px-1 italic">
-        <span>TOP 10 NEARBY DEVICES</span>
-        <span id="deviceCount">0 Total</span>
+        <span>Top 10 Nearby Devices</span>
+        <span id="deviceCount">0 Found</span>
       </div>
       <div id="deviceList" class="space-y-1.5">
-        <p class="text-center text-gray-800 py-10 italic">System Ready...</p>
+        <p class="text-center text-gray-800 py-10 italic">Ready to track...</p>
       </div>
     </div>
   </div>
@@ -70,12 +70,12 @@
       <div class="bg-black/50 p-4 rounded-xl mb-6 text-left">
         <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">Name</p>
         <p id="modalName" class="text-white font-bold text-base break-all mb-4">Device Name</p>
-        <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">Associated IDs</p>
+        <p class="text-[9px] text-gray-500 uppercase font-bold mb-1">ID History</p>
         <p id="modalID" class="text-blue-400 font-mono text-[10px] break-all">ID_STRING</p>
       </div>
       <div class="flex gap-2">
           <button onclick="closeModal()" class="flex-1 bg-gray-700 py-3 rounded-lg font-bold uppercase text-xs">Close</button>
-          <button id="modalDeleteBtn" class="hidden flex-none bg-red-800 px-4 py-3 rounded-lg font-bold uppercase text-xs">Remove Team</button>
+          <button id="modalDeleteBtn" class="hidden flex-none bg-red-800 px-4 py-3 rounded-lg font-bold uppercase text-xs">Remove</button>
       </div>
     </div>
   </div>
@@ -92,9 +92,15 @@
     const deviceList = document.getElementById('deviceList');
     const teamBadges = document.getElementById('teamBadges');
 
+    // โหลดข้อมูลทีม (ใช้ชื่อ Key ที่นิ่งที่สุด)
     window.onload = () => {
-      const saved = localStorage.getItem('morboy_team_v2');
-      if (saved) { teamList = JSON.parse(saved); renderTeamBadges(); }
+      const saved = localStorage.getItem('morboy_team_stable');
+      if (saved) {
+        try {
+          teamList = JSON.parse(saved);
+          renderTeamBadges();
+        } catch(e) { teamList = []; }
+      }
     };
 
     function renderTeamBadges() {
@@ -102,7 +108,7 @@
       const uniqueNames = [...new Set(teamList.map(m => m.name))];
       teamBadges.innerHTML = uniqueNames.map((name) => `
         <div onclick="showDetailByName('${name}')" class="team-badge">
-          ${name.length > 15 ? name.slice(0,12)+'..' : name}
+          ${name}
         </div>
       `).join('');
     }
@@ -114,7 +120,7 @@
       const delBtn = document.getElementById('modalDeleteBtn');
       delBtn.classList.remove('hidden');
       delBtn.onclick = () => { 
-        if(confirm(`Remove athlete: ${name}?`)) { 
+        if(confirm(`Remove all IDs for ${name}?`)) { 
           teamList = teamList.filter(m => m.name !== name); 
           saveAndRefresh(); closeModal(); 
         } 
@@ -127,7 +133,7 @@
       if (existingMember) {
         showDetailByName(existingMember.name);
       } else {
-        const playerName = prompt(`Add New Athlete?\nID: ${id.slice(0,8)}...\n\nName:`, name);
+        const playerName = prompt(`พบอุปกรณ์ใหม่\nID: ${id.slice(0,8)}...\n\nกรุณาใส่ชื่อนักกีฬา (ใส่ชื่อเดิมเพื่อผูก ID เพิ่ม):`, name);
         if (playerName) {
           teamList.push({ id, name: playerName });
           saveAndRefresh();
@@ -136,23 +142,78 @@
     }
 
     function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
-    function clearTeam() { if(confirm('Clear all team data?')) { teamList = []; saveAndRefresh(); } }
-    function saveAndRefresh() { localStorage.setItem('morboy_team_v2', JSON.stringify(teamList)); renderTeamBadges(); render(); }
+    function clearTeam() { if(confirm('Clear all registered data?')) { teamList = []; saveAndRefresh(); } }
+    function saveAndRefresh() { 
+      localStorage.setItem('morboy_team_stable', JSON.stringify(teamList)); 
+      renderTeamBadges(); 
+      render(); 
+    }
 
     startBtn.onclick = async () => {
       try {
+        if (bluetoothScan) bluetoothScan.stop(); // เคลียร์ของเก่าถ้ามี
+
         bluetoothScan = await navigator.bluetooth.requestLEScan({ acceptAllAdvertisements: true, keepRepeatedDevices: true });
+        
         statusTag.innerText = "RADAR ON";
         statusTag.className = "bg-green-600 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase";
-        startBtn.classList.add('hidden');
-        stopBtn.classList.remove('hidden');
+        startBtn.innerText = "SCANNING ACTIVE...";
+        startBtn.disabled = true;
+        
         navigator.bluetooth.addEventListener('advertisementreceived', handleSignal);
-      } catch (e) { alert("Error: " + e.message); }
+      } catch (e) { 
+        alert("Error: " + e.message + "\nให้รีโหลดหน้าเว็บแล้วลองใหม่ครับ"); 
+        statusTag.innerText = "OFF";
+      }
     };
 
-    stopBtn.onclick = () => location.reload();
+    stopBtn.onclick = () => {
+      if (confirm('ระบบจะหยุดทำงานและรีเฟรชหน้าใหม่ (Whitelist จะยังอยู่)')) {
+        location.reload();
+      }
+    };
 
     function handleSignal(event) {
       const id = event.device.id;
       const name = event.device.name || "Unknown Device";
       const rssi = event.rssi;
+      const env = parseFloat(document.getElementById('envMode').value);
+      const search = document.getElementById('quickSearch').value.toLowerCase();
+      const dist = Math.pow(10, (TX_POWER - rssi) / (10 * env));
+      
+      const isTeam = teamList.some(m => m.id === id || (name !== "Unknown Device" && m.name === name));
+
+      if (search && !name.toLowerCase().includes(search) && !id.toLowerCase().includes(search)) return;
+      devices.set(id, { id, name, rssi, dist, isTeam, time: Date.now() });
+      render();
+    }
+
+    function render() {
+      const now = Date.now();
+      for (let [id, data] of devices) { if (now - data.time > 8000) devices.delete(id); }
+      const all = Array.from(devices.values());
+      const teamItems = all.filter(d => d.isTeam).sort((a, b) => a.dist - b.dist);
+      const generalItems = all.filter(d => !d.isTeam).sort((a, b) => a.dist - b.dist).slice(0, 10);
+
+      const displayItems = [...teamItems, ...generalItems];
+      document.getElementById('deviceCount').innerText = `${all.length} Total`;
+
+      deviceList.innerHTML = displayItems.map((d) => `
+        <div onclick="handleCardClick('${d.id}', '${d.name}')" class="item-card ${d.isTeam ? 'whitelist-card' : ''} flex justify-between items-center shadow-lg transition-all">
+          <div class="flex-1 overflow-hidden pr-2 text-left">
+            <div class="flex items-center space-x-2">
+              ${d.isTeam ? '<span class="bg-red-600 text-[8px] px-1 rounded font-black uppercase italic">Athlete</span>' : ''}
+              <span class="device-name">${d.name}</span>
+            </div>
+            <div class="id-text-full">${d.id}</div>
+            <div class="text-[9px] text-gray-500 mt-1 uppercase font-mono">Signal: ${d.rssi} dBm</div>
+          </div>
+          <div class="text-right flex-none">
+            <div class="text-2xl font-black ${d.isTeam ? 'text-red-500' : 'text-blue-500'}">${d.dist.toFixed(1)}<span class="text-[10px] ml-0.5 text-gray-500 font-normal italic">m</span></div>
+          </div>
+        </div>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
