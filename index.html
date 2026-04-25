@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Athlete Radar v5.7 - Dual Tab</title>
+  <title>Athlete Radar v5.7 - PWA</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3b82f6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1085/1085493.png">
+
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body { background-color: #000; color: #fff; font-family: sans-serif; overflow-x: hidden; }
@@ -76,12 +83,10 @@
     <div id="screeningSection" class="tab-content hidden">
       <div class="bg-gray-900 p-4 rounded-2xl border border-yellow-900/50 mb-4 shadow-xl">
         <h3 class="text-yellow-500 font-black text-xs uppercase italic mb-4">Smart Box Screening (Calibrate)</h3>
-        
         <div class="flex items-center justify-between mb-4 bg-black/30 p-3 rounded-lg">
           <label class="text-[10px] text-gray-400 font-bold uppercase">Target Watches In Box</label>
           <input id="targetCount" type="number" value="1" min="1" max="10" class="w-12 bg-gray-800 border border-gray-600 rounded text-center text-white font-bold">
         </div>
-
         <div id="filterStatus" class="hidden mb-4">
           <div class="flex justify-between text-[10px] mb-1 uppercase font-bold">
             <span id="stepLabel" class="text-yellow-500">Phase 1: Stay Close (< 30cm)</span>
@@ -89,12 +94,8 @@
           </div>
           <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
         </div>
-
-        <button id="screenBtn" class="w-full bg-yellow-600 py-4 rounded-xl font-black uppercase text-xs shadow-lg active:scale-95 transition">Start Smart Screening</button>
-        <p class="mt-3 text-[9px] text-gray-500 text-center font-bold italic uppercase">วางมือถือติดกล่องนาฬิกา < 30 ซม. แล้วกดเริ่ม</p>
+        <button id="screenBtn" class="w-full bg-yellow-600 py-4 rounded-xl font-black uppercase text-xs shadow-lg">Start Smart Screening</button>
       </div>
-      
-      <div class="text-[10px] text-gray-600 font-black italic mb-2 uppercase px-1">Detected in screening</div>
       <div id="screeningList" class="space-y-1.5 opacity-60"></div>
     </div>
   </div>
@@ -102,11 +103,7 @@
   <div id="mapModal" class="modal" onclick="closeModal()">
     <div class="modal-content" onclick="event.stopPropagation()">
       <h2 class="text-blue-500 font-black text-lg mb-1 uppercase italic border-b border-gray-700 pb-2">Athlete Mapping</h2>
-      <p id="targetIDDisp" class="text-[9px] text-gray-400 mt-2 font-mono break-all"></p>
-      <div class="my-4">
-        <p class="text-[10px] text-red-500 font-black uppercase mb-2">Assign to Member:</p>
-        <div id="athleteOptions" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
-      </div>
+      <div id="athleteOptions" class="my-4 space-y-2 max-h-48 overflow-y-auto pr-1"></div>
       <div class="border-t border-gray-700 pt-4">
         <button onclick="promptNewAthlete()" class="w-full bg-blue-600 py-3 rounded-xl font-bold uppercase text-xs mb-2">New Athlete</button>
         <button onclick="closeModal()" class="w-full bg-gray-700 py-3 rounded-xl font-bold uppercase text-xs">Cancel</button>
@@ -115,6 +112,12 @@
   </div>
 
   <script>
+    // --- PWA Service Worker Registration ---
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(() => console.log("PWA Active"));
+    }
+
+    // --- โค้ด Bluetooth Logic เดิม ---
     const TX_POWER = -59;
     let devices = new Map();
     let teamList = [];
@@ -143,7 +146,6 @@
       container.innerHTML = uniqueNames.map(name => `<div class="team-badge">${name}</div>`).join('');
     }
 
-    // Bluetooth Handling
     async function startService(mode) {
       try {
         if (bluetoothScan) return;
@@ -151,50 +153,32 @@
         document.getElementById('statusTag').innerText = "ON";
         document.getElementById('statusTag').className = "bg-green-600 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase";
         navigator.bluetooth.addEventListener('advertisementreceived', handleSignal);
-        
         if (mode === 'screen') runScreeningLogic();
         else {
             document.getElementById('startBtn').innerText = "RADAR ACTIVE";
             document.getElementById('startBtn').disabled = true;
-            document.getElementById('startBtn').className = "w-full bg-blue-900 py-4 rounded-xl font-black uppercase text-sm mb-2 opacity-50";
         }
-      } catch (e) { alert(e.message); }
+      } catch (e) { alert("Error: " + e.message); }
     }
 
     function runScreeningLogic() {
-      screeningMode = "PHASE1";
-      screenTimer = 30;
+      screeningMode = "PHASE1"; screenTimer = 30;
       document.getElementById('filterStatus').classList.remove('hidden');
-      document.getElementById('screenBtn').disabled = true;
-      document.getElementById('screenBtn').innerText = "SCREENING...";
-
       const countdown = setInterval(() => {
         screenTimer--;
-        const perc = ((30 - screenTimer) / 30) * 100;
-        document.getElementById('progressFill').style.width = perc + "%";
+        document.getElementById('progressFill').style.width = ((30 - screenTimer) / 30 * 100) + "%";
         document.getElementById('timerLabel').innerText = screenTimer + "s";
-        
-        if (screenTimer === 15) {
-          screeningMode = "PHASE2";
-          document.getElementById('stepLabel').innerText = "Phase 2: MOVE 5-10m AWAY!";
-          document.getElementById('stepLabel').className = "text-blue-400";
-        }
-
-        if (screenTimer <= 0) {
-          clearInterval(countdown);
-          finishScreening();
-        }
+        if (screenTimer === 15) { screeningMode = "PHASE2"; document.getElementById('stepLabel').innerText = "MOVE AWAY!"; }
+        if (screenTimer <= 0) { clearInterval(countdown); finishScreening(); }
       }, 1000);
     }
 
     function handleSignal(event) {
       const id = event.device.id;
       const name = event.device.name || "Unknown";
-      const rssi = event.rssi;
-      devices.set(id, { id, name, rssi, time: Date.now() });
-
-      if (screeningMode === "PHASE1" && rssi > -50) {
-        if (!candidates.has(id)) candidates.set(id, { initialRSSI: rssi, name });
+      devices.set(id, { id, name, rssi: event.rssi, time: Date.now() });
+      if (screeningMode === "PHASE1" && event.rssi > -50) {
+        if (!candidates.has(id)) candidates.set(id, { initialRSSI: event.rssi, name });
       }
       render();
     }
@@ -203,69 +187,50 @@
       const now = Date.now();
       const n = parseFloat(document.getElementById('envMode').value);
       const limit = parseInt(document.getElementById('displayLimit').value);
-      const search = document.getElementById('quickSearch').value.toLowerCase();
-
       for (let [id, data] of devices) { if (now - data.time > 8000) devices.delete(id); }
-      
       const all = Array.from(devices.values()).map(d => {
-        const member = teamList.find(m => m.id === d.id);
-        const dist = Math.pow(10, ((member ? member.tx : TX_POWER) - d.rssi) / (10 * n));
-        return { ...d, dist, isTeam: !!member, isCandidate: candidates.has(d.id) };
+        const m = teamList.find(t => t.id === d.id);
+        const dist = Math.pow(10, ((m ? m.tx : TX_POWER) - d.rssi) / (10 * n));
+        return { ...d, dist, isTeam: !!m, isCandidate: candidates.has(d.id) };
       });
-
-      const filtered = all.filter(d => !search || d.name.toLowerCase().includes(search));
-      const sorted = filtered.sort((a, b) => a.isTeam === b.isTeam ? a.dist - b.dist : a.isTeam ? -1 : 1);
-
-      // Render Radar List
+      const sorted = all.sort((a, b) => a.isTeam === b.isTeam ? a.dist - b.dist : a.isTeam ? -1 : 1);
       document.getElementById('deviceCount').innerText = `TOP ${limit} / TOTAL ${all.length}`;
       document.getElementById('deviceList').innerHTML = sorted.slice(0, limit).map(d => renderCard(d)).join('');
-      
-      // Render Screening List (Simple view)
       document.getElementById('screeningList').innerHTML = all.filter(d => d.isCandidate).map(d => renderCard(d)).join('');
     }
 
     function renderCard(d) {
-      return `
-        <div onclick="handleCardClick('${d.id}', '${d.name}')" class="item-card ${d.isTeam ? 'whitelist-card' : (d.isCandidate ? 'highlight-card' : '')} flex justify-between items-center">
-          <div class="flex-1 overflow-hidden pr-2">
-            <div class="flex items-center space-x-2">
-              ${d.isTeam ? '<span class="text-[7px] bg-red-600 px-1 rounded font-black italic">TEAM</span>' : (d.isCandidate ? '<span class="text-[7px] bg-yellow-600 px-1 rounded font-black text-black">IN BOX</span>' : '')}
-              <span class="device-name">${d.name}</span>
-            </div>
-            <div class="id-text-full">${d.id}</div>
+      return `<div onclick="handleCardClick('${d.id}', '${d.name}')" class="item-card ${d.isTeam ? 'whitelist-card' : (d.isCandidate ? 'highlight-card' : '')} flex justify-between items-center">
+        <div class="flex-1 overflow-hidden pr-2">
+          <div class="flex items-center space-x-2">
+            ${d.isTeam ? '<span class="text-[7px] bg-red-600 px-1 rounded font-black italic">TEAM</span>' : ''}
+            <span class="device-name">${d.name}</span>
           </div>
-          <div class="text-right">
-            <div class="text-2xl font-black ${d.isTeam ? 'text-red-500' : 'text-blue-500'}">${d.dist.toFixed(1)}m</div>
-            <div class="text-[9px] text-gray-500 font-bold">${d.rssi} dBm</div>
-          </div>
+          <div class="id-text-full">${d.id}</div>
         </div>
-      `;
+        <div class="text-right">
+          <div class="text-2xl font-black ${d.isTeam ? 'text-red-500' : 'text-blue-500'}">${d.dist.toFixed(1)}m</div>
+          <div class="text-[9px] text-gray-500">${d.rssi} dBm</div>
+        </div>
+      </div>`;
     }
 
     function finishScreening() {
-      const target = parseInt(document.getElementById('targetCount').value);
-      const confirmed = [];
-      for (let [id, data] of candidates) {
-        const current = devices.get(id);
-        if (current && Math.abs(current.rssi - data.initialRSSI) < 15) {
-          const p0 = data.initialRSSI - (10 * 2.0 * -0.5228); 
-          confirmed.push({ id, name: data.name, tx: p0 });
+        const target = parseInt(document.getElementById('targetCount').value);
+        const confirmed = [];
+        for (let [id, data] of candidates) {
+            const current = devices.get(id);
+            if (current && Math.abs(current.rssi - data.initialRSSI) < 15) {
+                confirmed.push({ id, name: data.name, tx: data.initialRSSI - (10 * 2.0 * -0.5228) });
+            }
         }
-      }
-      teamList = [...teamList, ...confirmed.slice(0, target)];
-      localStorage.setItem('morboy_team_v5_7', JSON.stringify(teamList));
-      screeningMode = "OFF";
-      document.getElementById('filterStatus').classList.add('hidden');
-      document.getElementById('screenBtn').disabled = false;
-      document.getElementById('screenBtn').innerText = "Start Smart Screening";
-      renderTeamBadges();
-      switchTab('radar');
-      alert(`Screening Done! Found ${confirmed.slice(0, target).length} athletes.`);
+        teamList = [...teamList, ...confirmed.slice(0, target)];
+        saveAndRefresh(); screeningMode = "OFF"; document.getElementById('filterStatus').classList.add('hidden');
+        switchTab('radar');
     }
 
     function handleCardClick(id, name) {
       currentMappingID = id;
-      document.getElementById('targetIDDisp').innerText = "ID: " + id;
       const names = [...new Set(teamList.map(m => m.name))];
       document.getElementById('athleteOptions').innerHTML = names.map(n => `<button onclick="linkToAthlete('${n}')" class="w-full bg-gray-800 p-3 rounded-xl mb-2 text-white font-bold text-xs uppercase">${n}</button>`).join('');
       document.getElementById('mapModal').style.display = 'flex';
