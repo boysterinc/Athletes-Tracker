@@ -3,19 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Athlete Radar v5.0 - Display Control</title>
+  <title>Athlete Radar v5.1 - Ultra Stable</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body { background-color: #000; color: #fff; font-family: sans-serif; overflow-x: hidden; }
     .device-name { color: #FFFFFF !important; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; line-height: 1.2; word-break: break-all; }
     .id-text-full { font-family: monospace; color: #9ca3af; font-size: 10px; line-height: 1.2; margin-top: 4px; word-break: break-all; }
-    .item-card { background: #111827; border-left: 5px solid #374151; margin-bottom: 6px; padding: 12px; border-radius: 12px; cursor: pointer; }
+    .item-card { background: #111827; border-left: 5px solid #374151; margin-bottom: 6px; padding: 12px; border-radius: 12px; cursor: pointer; transition: 0.2s; }
     .whitelist-card { border-left: 5px solid #ef4444 !important; background-color: #1e1b4b !important; }
     .team-badge { background: #1e1b4b; border: 1px solid #3b82f6; color: #fff; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; cursor: pointer; margin-bottom: 4px; }
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
     .modal-content { background: #1f2937; padding: 24px; width: 100%; max-width: 360px; border-radius: 20px; border: 1px solid #374151; max-height: 90vh; overflow-y: auto; }
     .select-btn { background: #2d3748; border: 1px solid #4a5568; padding: 10px; border-radius: 12px; margin-bottom: 8px; text-align: left; width: 100%; transition: 0.2s; }
-    select { appearance: none; -webkit-appearance: none; }
   </style>
 </head>
 <body class="p-4">
@@ -23,8 +22,8 @@
   <div class="max-w-md mx-auto">
     <header class="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
       <div>
-        <h1 class="text-lg font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v5.0</h1>
-        <p class="text-[9px] text-gray-500 font-bold uppercase italic">Display Control Mode</p>
+        <h1 class="text-lg font-black text-blue-500 italic uppercase tracking-tighter">Team Radar v5.1</h1>
+        <p class="text-[9px] text-gray-500 font-bold uppercase italic">Ultra Stable Mode</p>
       </div>
       <div id="statusTag" class="bg-red-900 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase">OFF</div>
     </header>
@@ -61,15 +60,15 @@
     </div>
 
     <button id="startBtn" class="w-full bg-blue-600 py-4 rounded-xl font-black uppercase text-sm mb-2 shadow-lg active:scale-95 transition">Start Scanning</button>
-    <button id="stopBtn" class="w-full bg-gray-800 py-2 rounded-xl font-bold uppercase text-[10px] mb-4 border border-gray-700">Stop & Refresh</button>
+    <button id="stopBtn" class="w-full bg-gray-800 py-2 rounded-xl font-bold uppercase text-[10px] mb-4 border border-gray-700">Stop & Refresh Page</button>
 
     <div id="listArea">
-      <div class="flex justify-between text-[9px] text-gray-600 mb-2 uppercase font-black px-1 italic tracking-widest">
-        <span>Detected Devices</span>
+      <div class="flex justify-between text-[9px] text-gray-600 mb-2 uppercase font-black px-1 italic">
+        <span>Nearby Devices</span>
         <span id="deviceCount">0 Found</span>
       </div>
       <div id="deviceList" class="space-y-1.5">
-        <p class="text-center text-gray-800 py-10 italic">System Ready...</p>
+        <p class="text-center text-gray-800 py-10 italic">Ready to Scan...</p>
       </div>
     </div>
   </div>
@@ -79,7 +78,7 @@
       <h2 class="text-blue-500 font-black text-lg mb-1 uppercase italic">ID MAPPING</h2>
       <p id="targetIDDisp" class="text-[9px] text-gray-500 mb-4 font-mono break-all"></p>
       <div class="mb-4">
-        <p class="text-[10px] text-red-500 font-bold uppercase mb-2">Select Athlete to Link:</p>
+        <p class="text-[10px] text-red-500 font-bold uppercase mb-2">Link to Athlete:</p>
         <div id="athleteOptions" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
       </div>
       <div class="border-t border-gray-700 pt-4">
@@ -100,4 +99,24 @@
       </div>
       <div class="flex gap-2">
           <button onclick="closeModal()" class="flex-1 bg-gray-700 py-3 rounded-lg font-bold uppercase text-xs">Close</button>
-          <button id="modalDeleteBtn" class="flex-none bg-red-900 px-4 py-3 rounded-lg font-bold uppercase text
+          <button id="modalDeleteBtn" class="flex-none bg-red-900 px-4 py-3 rounded-lg font-bold uppercase text-xs">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TX_POWER = -59;
+    let devices = new Map();
+    let teamList = [];
+    let bluetoothScan = null;
+    let currentMappingID = null;
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const statusTag = document.getElementById('statusTag');
+    const deviceList = document.getElementById('deviceList');
+    const teamBadges = document.getElementById('teamBadges');
+
+    window.onload = () => {
+      const saved = localStorage.getItem('morboy_team_stable');
+      if (saved) { try { teamList = JSON.parse(saved); renderTeamBadges(); } catch(e) {
